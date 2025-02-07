@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.lang.model.element.Element;
-//import javax.swing.text.Document;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -130,7 +129,6 @@ public class Main
                         }
                       }
                     }
-
                   }
                 }
                     
@@ -278,8 +276,6 @@ public class Main
           }
           channelReader.close();
         }
-        //cMDFinalXMLString.replace(, "");
-        //String[] splitChannelMetadata = cMDFinalXMLString.split("\n");
         System.out.println("Finished #2");
         
         //3. Captures the last item from the channel array, stores it for later, and adds the channelMetadata to the channel array
@@ -290,7 +286,6 @@ public class Main
         System.out.println("channelMetadataXMLArray size: " + channelMetadataXMLArray.size());
         for(int p=1;p<channelMetadataXMLArray.size();p++)
         {
-          System.out.println(channelMetadataXMLArray.get(p));
           channelXMLArray.add(channelMetadataXMLArray.get(p));
         }
         channelXMLArray.add(endOfChannelArray);
