@@ -1,13 +1,15 @@
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.IOException;
 
 public class Main 
 {   
   private static String dbPath;
-  private static String fullDBPath;
+  private static String dbSubfolder;
+  private static String fullDBPath = "jdbc:derby:";
 
     public static void main(String args[]) throws ClassNotFoundException, SQLException, FileNotFoundException
     {
@@ -19,6 +21,10 @@ public class Main
       //calls connection to DB and applies it to the host for SQL queries
       determineDBLocation();
       String host = fullDBPath;
+
+      //Checks connection for log file
+      logCommands callLog = new logCommands();
+      callLog.checkLogFile();
 
       //Call full channel backups
       channelExport exportChannels = new channelExport();
@@ -72,9 +78,19 @@ public class Main
         dbPath = "";
       } 
       
-      //This following section of code determines the remainder of the address for the DB connection
-      //hardcoded currently
-      fullDBPath = "jdbc:derby:" + dbPath + "appdata\\mirthdb;";
+      //This following section of code determines the subfolder for the DB filepath
+      //It checks to see if the "appdata" folder exists. If not it connects right to "mirthdb"
+      File dbSubPath = new File(dbPath+"appdata");
+      if(dbSubPath.exists())
+      {
+        dbSubfolder = "appdata\\mirthdb;";
+        fullDBPath = fullDBPath + dbPath + dbSubfolder;
+      }
+      else
+      {
+        dbSubfolder = "mirthdb";
+        fullDBPath = fullDBPath + dbPath + dbSubfolder;
+      }
       System.out.println("Full DB Path: " + fullDBPath);
     }
 
@@ -115,6 +131,14 @@ public class Main
         System.out.println("I AM STOPPED");
       }
       return;
+    }
+
+    public static String returnHost()
+    {
+      fullDBPath = "jdbc:derby:";
+      determineDBLocation();
+      String host = fullDBPath;
+      return host;
     }
 
 }
