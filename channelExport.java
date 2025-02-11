@@ -26,7 +26,7 @@ import org.w3c.dom.NodeList;
 public class channelExport
 {
     private static ArrayList extractedCMDArray = new ArrayList();
-    private static ArrayList extractedCMD = new ArrayList<>();
+    //private static ArrayList extractedCMD = new ArrayList<>();
 
     //Arrays to track channel names, metadata associated with the channels, reordered CMD, all channelXML exports, and channel ids
     private static ArrayList channelNames = new ArrayList<>();
@@ -165,7 +165,6 @@ public class channelExport
 
                 String channelMetadataXML = rs.getString(3);
                 String[] splitByRootCMD = channelMetadataXML.split("<entry>");
-                String[] splitChannelMetadata = channelMetadataXML.split("\n");
 
                 /**
                  * This section:
@@ -270,19 +269,7 @@ public class channelExport
                   }
                 }
 
-                try (PrintWriter channelMetadataOut = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\ARCHIVED\\Comparison\\APPENDXMLTESTING\\FinalDestination" + "\\testExtracted.xml"))
-                {
-                  for (int o=2; o<extractedCMD.size(); o++)
-                  {
-                    channelMetadataOut.print(extractedCMD.get(o));
-                  }
-                  channelMetadataOut.close();
-                }
-                catch (FileNotFoundException fileExcept2) 
-                {
-                  System.out.println("I DIDN'T FIND THE channelMetadata FILE");
-                } 
-                    
+                //Reformats the XML for the channelMetadata. Preps for appending to the channel XML
                 try 
                 {
                   // Step 1: Create a DocumentBuilderFactory and DocumentBuilder
@@ -350,15 +337,15 @@ public class channelExport
               }              
 
               //writes all files contained in "CONFIGURATION" table
-              try (PrintWriter XMLout = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING" + "\\" + fileName)) 
-              {
-                XMLout.println(XMLdata);
-                XMLout.close();
-              } 
-              catch (FileNotFoundException fileExcept2)
-              {
-                System.out.println("I DIDN'T FIND THE FILE");
-              } 
+            //   try (PrintWriter XMLout = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING" + "\\" + fileName)) 
+            //   {
+            //     XMLout.println(XMLdata);
+            //     XMLout.close();
+            //   } 
+            //   catch (FileNotFoundException fileExcept2)
+            //   {
+            //     System.out.println("I DIDN'T FIND THE FILE");
+            //   } 
             } 
           } 
           catch (SQLException sqlExcept) 
@@ -434,6 +421,10 @@ public class channelExport
           currentMetadata.clear();
         }             
         //END channelExport Appending
+        extractedCMDArray.clear();
+        masterChannelXML.clear();
+        extractedCMDArrayREORDERED.clear();
+        logCommands.returnArchivedChannels("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\");
         return "metaDataExported";
     }
 }
