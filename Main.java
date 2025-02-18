@@ -10,6 +10,7 @@ public class Main
   private static String dbPath;
   private static String dbSubfolder;
   private static String fullDBPath = "jdbc:derby:";
+  private static String serviceState = "";
 
     public static void main(String args[]) throws ClassNotFoundException, SQLException, FileNotFoundException
     {
@@ -21,10 +22,6 @@ public class Main
       //calls connection to DB and applies it to the host for SQL queries
       determineDBLocation();
       String host = fullDBPath;
-
-      //Checks connection for log file
-      logCommands callLog = new logCommands();
-      callLog.checkLogFile();
 
       //Call full channel backups
       channelExport exportChannels = new channelExport();
@@ -95,7 +92,7 @@ public class Main
     }
 
     //verifies if the Mirth service is running
-    public static void checkMirthService()
+    public static String checkMirthService()
     {
       String serviceStatus = "";
       try 
@@ -120,17 +117,20 @@ public class Main
         if (serviceStatus.contains("FAILED")) 
         {
           System.out.println("SERVICE NOT INSTALLED");
+          serviceState = "FAILED";
         } 
         else 
         {
-          System.out.println("SERVICE STARTED");;
+          System.out.println("SERVICE STARTED");
+          serviceState = "STARTED";
         }
       }
       else
       {
         System.out.println("I AM STOPPED");
+        serviceState = "STOPPED";
       }
-      return;
+      return serviceState;
     }
 
     public static String returnHost()
