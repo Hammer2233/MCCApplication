@@ -34,6 +34,16 @@ public class channelExport
     private static ArrayList extractedCMDArrayREORDERED = new ArrayList<>();
     private static ArrayList masterChannelXML = new ArrayList<>();
 
+    //Arrays to track code template library names, library XML
+    //NOTE: This only needs to be ran once as all channels utilize all code template libraries
+    private static ArrayList codeTemplateNames = new ArrayList<>();
+    private static ArrayList codeTemplateLibraryNames = new ArrayList<>();
+    private static ArrayList codeTemplateIDs = new ArrayList<>();
+    private static ArrayList completeCodeTemplates = new ArrayList<>();
+    private static ArrayList currentCodeTemplateLib = new ArrayList<>();
+    private static ArrayList curExtractedCT = new ArrayList<>();
+    private static ArrayList allCTLArray = new ArrayList<>();
+
     public static String exportChannels(String host)
     {
         //exports the channels (standard Merby export)
@@ -335,17 +345,6 @@ public class channelExport
                   e.printStackTrace();
                 }
               }              
-
-              //writes all files contained in "CONFIGURATION" table
-            //   try (PrintWriter XMLout = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING" + "\\" + fileName)) 
-            //   {
-            //     XMLout.println(XMLdata);
-            //     XMLout.close();
-            //   } 
-            //   catch (FileNotFoundException fileExcept2)
-            //   {
-            //     System.out.println("I DIDN'T FIND THE FILE");
-            //   } 
             } 
           } 
           catch (SQLException sqlExcept) 
@@ -366,6 +365,9 @@ public class channelExport
          * 3. Adds the channelMetadata to the channel
          * 4. Writes the full files to the channelBackup folder
          */
+
+        //calls codeTemplates
+        exportCodeTemplates(host);
 
         //1. Creates new arrays and loop
         ArrayList currentChannelXML = new ArrayList<>();
@@ -408,6 +410,13 @@ public class channelExport
             for (int h=0; h<currentChannelXML.size(); h++)
             {
              channelExportFinal.print(currentChannelXML.get(h));
+             if(currentChannelXML.get(h).toString().contains("</metadata>"))
+             {
+              for(int b=0;b<allCTLArray.size();b++)
+              {
+                channelExportFinal.print(allCTLArray.get(b));
+              }
+             }
             }
             channelExportFinal.close();
           }
@@ -421,10 +430,264 @@ public class channelExport
           currentMetadata.clear();
         }             
         //END channelExport Appending
+        curExtractedCT.clear();
+        currentCodeTemplateLib.clear();
+        completeCodeTemplates.clear();
+        codeTemplateIDs.clear();
+        codeTemplateLibraryNames.clear();
+        codeTemplateNames.clear();
+        allCTLArray.clear();
         extractedCMDArray.clear();
         masterChannelXML.clear();
         extractedCMDArrayREORDERED.clear();
         logCommands.returnArchivedChannels("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\");
         return "metaDataExported";
+    }
+
+    public static String exportCodeTemplates(String host) throws FileNotFoundException
+    {
+      //creates backup directory if it does not exist
+      File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      dir.mkdirs();
+      dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\");
+      dir.mkdirs();
+
+      //int to track if the first query has ran
+      int queryCount = 0;
+
+      String query="";
+      while(queryCount <= 1)
+      {
+        //exports CodeTemplateLibraries
+        try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+          //sets queries
+          if(queryCount == 0)
+          {
+            query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
+          }
+          else
+          {
+            query = "SELECT * FROM CODE_TEMPLATE";
+          }
+          ResultSet rs = stmt.executeQuery(query);
+          ResultSetMetaData RSMD = rs.getMetaData();
+          int columns = RSMD.getColumnCount();
+
+
+          try
+          {
+            while (rs.next()) 
+            {
+              String fileName = rs.getString(2);
+              if (columns == 2 || fileName.length() > 100) 
+              {
+                int pos1 = fileName.indexOf("<name>") + 6;
+                int pos2 = fileName.indexOf("</name>");
+                fileName = fileName.substring(pos1, pos2);
+              }
+              fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
+                
+              //column containing CLOB
+              String XMLdata = rs.getString(4);
+              //exports all channel export files to the specified directory
+              String destination = "";
+              if(queryCount == 0)
+              {
+                query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
+                destination = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\";
+
+              }
+              else
+              {
+                query = "SELECT * FROM CODE_TEMPLATE";
+                destination = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\";
+              }
+              try (PrintWriter XMLout = new PrintWriter(destination + fileName+".xml")) 
+              {
+                XMLout.println(XMLdata);
+                XMLout.close();
+              } 
+              catch (FileNotFoundException fileExcept2) 
+              {
+                System.out.println("First channel export");
+                System.out.println("I DIDN'T FIND THE FILE");
+              }
+            }
+          } 
+          catch (SQLException sqlExcept) 
+          {
+            System.out.println("FAILED MISERABLY");
+            System.out.println(sqlExcept);
+          }
+        }
+        catch (Exception e) 
+        {
+          e.printStackTrace();
+        }
+        queryCount++;
+        System.out.println("Query Count: " + queryCount);
+      }
+
+      //captures all code template XML data and stores it in an array
+      File[] codeTemplateDirectory = dir.listFiles();
+      String currentCodeTemplateXML = "";
+      for(int b=0;b<codeTemplateDirectory.length;b++)
+      {
+        codeTemplateNames.add(codeTemplateDirectory[b].getName());
+      }
+      for(int c=0;c<codeTemplateNames.size();c++)
+      {        
+        File currentCTXML = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\"+codeTemplateNames.get(c));
+        try(Scanner channelDirReader = new Scanner(currentCTXML))
+        {
+          while(channelDirReader.hasNext())
+          {
+            String line = channelDirReader.nextLine();
+            currentCodeTemplateXML += line+"\n";
+          }
+          completeCodeTemplates.add(currentCodeTemplateXML);
+          currentCodeTemplateXML = "";
+          channelDirReader.close();
+        }
+      }
+
+      //reads the code template library and appends the code template information
+      dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      File[] codeTemplateLibraryDir = dir.listFiles();
+      //gets names of code template libraries
+      for(int j=0;j<codeTemplateLibraryDir.length;j++)
+      {
+        codeTemplateLibraryNames.add(codeTemplateLibraryDir[j].getName());
+      }
+
+      //adds the opening "codeTemplateLibraries" tag
+      allCTLArray.add("<codeTemplateLibraries>"+"\n");
+
+      //parses and reads each file
+      //appends the channel template to the channel template library 
+      for(int v=0;v<codeTemplateLibraryNames.size();v++)
+      {
+        File currentCodeTemplateLibXML = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v));
+        try(Scanner channelDirReader = new Scanner(currentCodeTemplateLibXML))
+        {
+          //this loop does the following:
+          /**
+           * 1. declares an idCount to skip the Code Template Library ID
+           * 2. reads the specified code template IDs from the code template library
+           * 3. Trims and adds them to an array
+           * 4. clears the codeTemplateIDs array when finished
+           */
+          int idCount = 0;
+          while(channelDirReader.hasNext())
+          {
+            String capturedCTLID = "";
+            String line = channelDirReader.nextLine();
+            //checks if the ID is from the "channel template library" vs the "channel template"
+            if(line.contains("<id>") && idCount == 0)
+            {
+              idCount++;
+            }
+            else if(line.contains("<id>"))
+            {
+              capturedCTLID = line.replace("<id>","").replace("</id>","").trim();
+              codeTemplateIDs.add(capturedCTLID);
+            }
+            currentCodeTemplateLib.add(line);
+          }
+          idCount = 0;
+          channelDirReader.close();
+
+          /**
+           * 1. take and read the "currentCodeTemplateLib" array
+           * 2. Check if the current line.contains(<id>)
+           * 3. If so, trim the captured value and see if "completeCodeTemplates" has the trimmed value
+           * 4. Replace the current ID line with the full Code Template Library XML
+           * 5. Add to array and write it out
+           */
+          int idSkipper = 0;
+          for(int y=0;y<currentCodeTemplateLib.size();y++)
+          {
+            String currentPoint = currentCodeTemplateLib.get(y).toString();
+            if(currentPoint.contains("<id>") && idSkipper == 0)
+            {
+              idSkipper++;
+            }
+            else if(currentPoint.contains("<id>"))
+            {
+              String currentCapID = currentPoint.replace("<id>","").replace("</id>","").trim();
+              for(int s=0;s<completeCodeTemplates.size();s++)
+              {
+                if(completeCodeTemplates.get(s).toString().contains(currentCapID))
+                {
+                  String editedCTString = "";
+                  String[] splitCTByNL = completeCodeTemplates.get(s).toString().split("\n");
+    
+                  for(int u=0;u<splitCTByNL.length;u++)
+                  {
+                    if(u>0 && u<splitCTByNL.length-1)
+                    {
+                      curExtractedCT.add(splitCTByNL[u]);
+                    }
+                  }
+                  for(int r=0;r<curExtractedCT.size();r++)
+                  {
+                    editedCTString = editedCTString + curExtractedCT.get(r)+"\n";
+                  }
+                  currentCodeTemplateLib.set(y, editedCTString);
+                  editedCTString = "";
+                  curExtractedCT.clear();
+                }
+              }              
+            }
+          }
+          idSkipper = 0;
+
+          //adds the first tag
+
+          //writes to file
+          try (PrintWriter cTLOutput = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v)))
+          {
+            String appendedCTLMasterAddition = "";
+            for(int c=0;c<currentCodeTemplateLib.size();c++)
+            {
+              cTLOutput.print(currentCodeTemplateLib.get(c));
+              appendedCTLMasterAddition += (currentCodeTemplateLib.get(c)+"\n");
+            }
+            allCTLArray.add(appendedCTLMasterAddition);
+            appendedCTLMasterAddition = "";
+            cTLOutput.close();
+          }
+
+          for(int h=0;h<codeTemplateIDs.size();h++)
+          {
+            //System.out.println(codeTemplateIDs.get(h));
+          }
+          codeTemplateIDs.clear();
+        }
+        currentCodeTemplateLib.clear();
+      }
+
+      //adds the closing "codeTemplateLibraries" tag
+      allCTLArray.add("</codeTemplateLibraries>");
+
+      //the below code creates a master codeTemplateLibrary String from all x CTLs
+      String allCodeTemplateLibraries = "";
+      File ctLDIR = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      ctLDIR.getParentFile().mkdirs();
+      File[] codeTemplateLibraryDirectoryList = ctLDIR.listFiles();
+      for(int m=0;m<codeTemplateLibraryDirectoryList.length;m++)
+      {
+        File currentCTLFile = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryDirectoryList[m].getName());
+        try(Scanner channelDirReader = new Scanner(currentCTLFile))
+        {
+          while(channelDirReader.hasNext())
+          {
+            String line = channelDirReader.nextLine();
+            allCodeTemplateLibraries = allCodeTemplateLibraries + line + "\n";
+          }
+        }
+      }
+      return "codeTemplates and Libraries Exported";
     }
 }
