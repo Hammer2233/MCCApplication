@@ -44,6 +44,38 @@ public class channelExport
     private static ArrayList curExtractedCT = new ArrayList<>();
     private static ArrayList allCTLArray = new ArrayList<>();
 
+    //boolean to determine if code templates are included
+    private static boolean includeCTLs;
+    private static boolean isFullMirthExport = false;
+
+    public static boolean includeCodeTemplates(String yesNo)
+    {
+      if(yesNo == "YES")
+      {
+        includeCTLs = true;
+        return includeCTLs;
+      }
+      else
+      {
+        includeCTLs = false;
+        return includeCTLs;
+      }
+    }
+
+    public static boolean isFullMirthExportCheck(String yesNo)
+    {
+      if(yesNo == "YES")
+      {
+        isFullMirthExport = true;
+        return isFullMirthExport;
+      }
+      else
+      {
+        isFullMirthExport = false;
+        return false;
+      }
+    }
+
     public static String exportChannels(String host)
     {
         //exports the channels (standard Merby export)
@@ -54,14 +86,14 @@ public class channelExport
             ResultSetMetaData RSMD = rs.getMetaData();
             int columns = RSMD.getColumnCount();
 
+            //creates folder path if it does not yet exist:
+            File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup");
+            dir.mkdirs();
+
             try
             {
                 while (rs.next()) 
-                {
-                    //creates folder path if it does not yet exist:
-                    File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup");
-                    dir.mkdirs();
-
+                {                 
                     String fileName = rs.getString(2);
                     if (columns == 2 || fileName.length() > 100) 
                     {
@@ -110,6 +142,9 @@ public class channelExport
           ResultSetMetaData RSMD = rs.getMetaData();
           int columns = RSMD.getColumnCount();
 
+          File configFilesDir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles");
+          configFilesDir.mkdirs();
+
           try 
           {
             while (rs.next()) 
@@ -127,6 +162,18 @@ public class channelExport
               //THIS COLUMN INDEX chooses what data to convert to XML
               // String XMLdata = rs.getString(3);
               String XMLdata = rs.getString(3);
+
+              //exports all CONFIGURATION files to the specified directory
+              try (PrintWriter XMLout = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\" + fileName)) 
+              {
+                  XMLout.println(XMLdata);
+                  XMLout.close();
+              } 
+              catch (FileNotFoundException fileExcept2) 
+              {
+                  System.out.println("First channel export");
+                  System.out.println("I DIDN'T FIND THE FILE");
+              }
             
               if(rs.getString(2).equals("channelMetadata"))
               {
@@ -367,8 +414,11 @@ public class channelExport
          */
 
         //calls codeTemplates
-        exportCodeTemplates(host);
-
+        if(includeCTLs == true || isFullMirthExport == true)
+        {
+          exportCodeTemplates(host);
+        }
+        
         //1. Creates new arrays and loop
         ArrayList currentChannelXML = new ArrayList<>();
         ArrayList currentMetadata = new ArrayList<>();
@@ -409,8 +459,8 @@ public class channelExport
           {
             for (int h=0; h<currentChannelXML.size(); h++)
             {
-             channelExportFinal.print(currentChannelXML.get(h));
-             if(currentChannelXML.get(h).toString().contains("</metadata>"))
+             channelExportFinal.print(currentChannelXML.get(h)+"\n");
+             if(currentChannelXML.get(h).toString().contains("</metadata>") && includeCTLs == true)
              {
               for(int b=0;b<allCTLArray.size();b++)
               {
@@ -440,7 +490,7 @@ public class channelExport
         extractedCMDArray.clear();
         masterChannelXML.clear();
         extractedCMDArrayREORDERED.clear();
-        logCommands.returnArchivedChannels("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\");
+        //logCommands.returnArchivedChannels("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\");
         return "metaDataExported";
     }
 
@@ -606,6 +656,7 @@ public class channelExport
            * 5. Add to array and write it out
            */
           int idSkipper = 0;
+          boolean foundIDInCT = false;
           for(int y=0;y<currentCodeTemplateLib.size();y++)
           {
             String currentPoint = currentCodeTemplateLib.get(y).toString();
@@ -620,6 +671,9 @@ public class channelExport
               {
                 if(completeCodeTemplates.get(s).toString().contains(currentCapID))
                 {
+                  //added for evaluation to see if found ID is in a code template library
+                  foundIDInCT = true;
+
                   String editedCTString = "";
                   String[] splitCTByNL = completeCodeTemplates.get(s).toString().split("\n");
     
@@ -638,7 +692,37 @@ public class channelExport
                   editedCTString = "";
                   curExtractedCT.clear();
                 }
-              }              
+                else if(s == completeCodeTemplates.size()-1 && foundIDInCT == false)
+                {
+                  System.out.println("I WAS NOT DETECTED");
+                  System.out.println("ID NOT FOUND: " + currentPoint);
+
+                  for(int n=0;n<3;n++)
+                  {
+                    if(n==0)
+                    {
+                      System.out.println("DELETED y+1: " + currentCodeTemplateLib.get(y+1));
+                      currentCodeTemplateLib.remove(y+1);
+                    }
+                    else if(n==1)
+                    { 
+                      System.out.println("DELETED y: " + currentCodeTemplateLib.get(y));
+                      currentCodeTemplateLib.remove(y);
+                    }
+                    else if (n==2)
+                    {
+                      System.out.println("DELETED y-1: " + currentCodeTemplateLib.get(y-1));
+                      currentCodeTemplateLib.remove(y-1);
+                    }
+                    else
+                    {
+                      System.out.println("FIRED ON 3");
+                    }
+                  }
+                  y = y-3;
+                }
+              }            
+              foundIDInCT = false;  
             }
           }
           idSkipper = 0;
@@ -657,11 +741,6 @@ public class channelExport
             allCTLArray.add(appendedCTLMasterAddition);
             appendedCTLMasterAddition = "";
             cTLOutput.close();
-          }
-
-          for(int h=0;h<codeTemplateIDs.size();h++)
-          {
-            //System.out.println(codeTemplateIDs.get(h));
           }
           codeTemplateIDs.clear();
         }
