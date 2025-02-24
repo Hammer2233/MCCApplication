@@ -74,6 +74,28 @@ public class logCommands
         return "";        
     }
 
+    public static String exportToLog(String given)
+    {
+        //boolean to see if the log file and logThis has been initalized
+        if(checkLogNeeded == true)
+        {
+            try 
+            {
+                checkLogFile();
+                checkLogNeeded = false;
+            } 
+            catch (FileNotFoundException e) 
+            {
+                System.out.println("FAILED TO CHECK LOG FILE");
+            }
+        }
+        logThis.print(getDateTime()+ " " + given + "\n");
+        activeSessionLog.add(getDateTime()+ " " + given + "\n");
+        logThis.flush();
+        applicationWindow.setLogWindow();
+        return "";
+    }
+
     public static String exportCurrentLogToWindow()
     {
         //exports current log as string for the application window to process
