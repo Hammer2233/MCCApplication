@@ -1,7 +1,5 @@
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,17 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 public class fullConfigExport 
 {
     //String for Mirth Version
@@ -34,9 +21,14 @@ public class fullConfigExport
     private static ArrayList masterMirthExport = new ArrayList<>();
     private static ArrayList serverSettingsArray = new ArrayList<>();
 
+    private static String backupFolderPath;
+    private static String connection = "";
+
     public static String exportChannelGroups(String host) throws SQLException, FileNotFoundException
     {
-        serverSettingCreation();
+        connection = host;
+        backupFolderPath = Main.getBackupFolder();
+        //serverSettingCreation();
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
             String query = "SELECT * FROM CHANNEL_GROUP";
@@ -49,7 +41,7 @@ public class fullConfigExport
                 while (rs.next()) 
                 {
                     //creates folder path if it does not yet exist:
-                    String mainPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\channelGroups\\";
+                    String mainPath = backupFolderPath+"\\fullMirthExport\\channelGroups\\";
                     File dir = new File(mainPath);
                     dir.mkdirs();
 
@@ -86,6 +78,7 @@ public class fullConfigExport
         {
             e.printStackTrace();
         }
+        serverSettingCreation();
         return "Channel Groups Exported";
     }
 
@@ -103,7 +96,7 @@ public class fullConfigExport
                 while (rs.next()) 
                 {
                     //creates folder path if it does not yet exist:
-                    String mainPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\scripts\\";
+                    String mainPath = backupFolderPath+"\\fullMirthExport\\scripts\\";
                     File dir = new File(mainPath);
                     dir.mkdirs();
 
@@ -151,9 +144,9 @@ public class fullConfigExport
          "smtp.host", "smtp.port", "smtp.timeout", "smtp.from", "smtp.secure", "smtp.auth", "smtp.username", "smtp.password", "loginnotification.enabled",
         "loginnotification.message", "administratorautologoutinterval.enabled", "administratorautologoutinterval.field"};
 
-        String path = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\";
+        String path = backupFolderPath+"\\fullMirthExport\\configurationFiles\\";
         File configFileDir = new File(path);
-        configFileDir.mkdir();
+        //configFileDir.mkdir();
         //File[] configDirectory = configFileDir.listFiles();
 
         //start creating the master array and child arrays
@@ -167,15 +160,14 @@ public class fullConfigExport
         masterMirthExport.add("<date>"+formattedCurrTime+"</date>");
 
         //adds channelGroups to master Array
-        String channelGroupDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\channelGroups\\";
+        String channelGroupDir = backupFolderPath+"\\fullMirthExport\\channelGroups\\";
         File channelGroupDirList = new File(channelGroupDir);
-        channelGroupDirList.mkdir();
+        //channelGroupDirList.mkdir();
         File[] channelGroupList = channelGroupDirList.listFiles();
         //if/else added to account for no channelGroups
-        System.out.println("channelGroupList.length: " + channelGroupList.length);
         if(channelGroupList.length < 1)
         {
-            masterMirthExport.add("channelGroups/>");
+            masterMirthExport.add("<channelGroups/>");
         }
         else
         {
@@ -203,7 +195,7 @@ public class fullConfigExport
         //adds channelData to the master Array
         masterMirthExport.add("<channels>");
 
-        String channelDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\";
+        String channelDir = backupFolderPath+"\\channelBackup\\";
         File channelDirFile = new File(channelDir);
         File[] channelDirList = channelDirFile.listFiles();
         for(int u=0;u<channelDirList.length;u++)
@@ -226,40 +218,56 @@ public class fullConfigExport
 
         //adds channelTags to the master Array
         ArrayList channelTagArray = new ArrayList<>();
-        String channelTagDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\channelTags";
+        String channelTagDir = backupFolderPath+"\\fullMirthExport\\configurationFiles\\channelTags";
         File channelTagDirFile = new File(channelTagDir);
-        channelTagDirFile.mkdir();
-        try(Scanner channelTagsReader = new Scanner(channelTagDirFile))
+        //channelTagDirFile.mkdir();
+
+        if(channelTagDirFile.exists())
         {
-            while(channelTagsReader.hasNext())
+            try(Scanner channelTagsReader = new Scanner(channelTagDirFile))
             {
-                String line = channelTagsReader.nextLine();
-                channelTagArray.add(line);
+                while(channelTagsReader.hasNext())
+                {
+                    String line = channelTagsReader.nextLine();
+                    channelTagArray.add(line);
+                }
+                channelTagsReader.close();
             }
-            channelTagsReader.close();
-        }
-        //evaluates the trimming and replacement of "set" tags with "channelTags"
-        if(channelTagArray.size()<=1)
-        {
-            masterMirthExport.add("<channelTags/>");
+            //evaluates the trimming and replacement of "set" tags with "channelTags"
+            if(channelTagArray.size()<=1)
+            {
+                masterMirthExport.add("<channelTags/>");
+            }
+            else
+            {
+                channelTagArray.set(0, "<channelTags>");
+                channelTagArray.set(channelTagArray.size()-1, "</channelTags>");
+                for(int n=0;n<channelTagArray.size();n++)
+                {
+                    masterMirthExport.add(channelTagArray.get(n));
+                }
+            }
         }
         else
-        {
-            channelTagArray.set(0, "<channelTags>");
-            channelTagArray.set(channelTagArray.size()-1, "</channelTags>");
-            for(int n=0;n<channelTagArray.size();n++)
-            {
-                masterMirthExport.add(channelTagArray.get(n));
-            }
+        {   
+            masterMirthExport.add("<channelTags/>");
         }
         channelTagArray.clear();
 
-        //currently hardcoded to ignore alerts (until further testing)
-        masterMirthExport.add("<alerts/>");
+        //call to add Alerts to the master Array
+        try 
+        {
+            exportAlerts(connection);
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
 
         //adds codeTemplateLibraries to the masterArray
+        logCommands.exportToLog("EXPORTED - Code Template Libraries");
         masterMirthExport.add("<codeTemplateLibraries>");
-        String codeTemplateLibsPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\";
+        String codeTemplateLibsPath = backupFolderPath+"\\channelCodeTemplatesBackup\\codeTemplateLibraries\\";
         File codeTemplateLibsFile = new File(codeTemplateLibsPath);
         File[] codeTemplateLibsList = codeTemplateLibsFile.listFiles();
         for(int p=0;p<codeTemplateLibsList.length;p++)
@@ -285,9 +293,9 @@ public class fullConfigExport
         //String currentLine = "";
         for(int ii=0;ii<targetFiles.length;ii++)
         {
-            String configFilesDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\";
+            String configFilesDir = backupFolderPath+"\\fullMirthExport\\configurationFiles\\";
             File configFilesCurrent = new File(configFilesDir+targetFiles[ii]);
-            configFilesCurrent.mkdir();
+            //configFilesCurrent.mkdir();
             try(Scanner configFileReader = new Scanner(configFilesCurrent))
             {
                 while(configFileReader.hasNext())
@@ -399,7 +407,7 @@ public class fullConfigExport
             }
             catch(FileNotFoundException e)
             {
-                System.out.println("I COULDN'T FIND THE codeTemplateLibrary XML FILE");
+                System.out.println("I COULDN'T FIND THE " + configFilesCurrent + " XML FILE");
             }
         }
         for(int nn=0;nn<serverSettingsArray.size();nn++)
@@ -412,7 +420,7 @@ public class fullConfigExport
         masterMirthExport.add("<updateSettings version="+versionInfo+">");
 
         String[] updateSettings = {"stats.enabled", "stats.time"};
-        String updateSettingsDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\";
+        String updateSettingsDir = backupFolderPath+"\\fullMirthExport\\configurationFiles\\";
 
         for(int bb=0;bb<updateSettings.length;bb++)
         {
@@ -449,9 +457,10 @@ public class fullConfigExport
 
          //TESTING ONLY
          masterMirthExport.add("</serverConfiguration>"); 
-         File testMirthFulExport = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\fullExport\\");
-         testMirthFulExport.mkdir();
-         try (PrintWriter fullConfigOut = new PrintWriter(testMirthFulExport+"\\TestFull.xml"))
+         
+         File testMirthFulExport = new File(backupFolderPath+"\\fullMirthExport\\");
+         //testMirthFulExport.mkdir();
+         try (PrintWriter fullConfigOut = new PrintWriter(testMirthFulExport+"\\"+Main.getDateTime()+" Config Export.xml"))
          {
            //String appendedCTLMasterAddition = "";
            for(int c=0;c<masterMirthExport.size();c++)
@@ -460,6 +469,7 @@ public class fullConfigExport
            }
            fullConfigOut.close();
          }   
+         Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
          //TESTING ONLY
 
          //clears arraylists
@@ -484,7 +494,7 @@ public class fullConfigExport
                 while (rs.next()) 
                 {
                     //creates folder path if it does not yet exist:
-                    String mainPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\globalScripts\\";
+                    String mainPath = backupFolderPath+"\\fullMirthExport\\globalScripts\\";
                     File dir = new File(mainPath);
                     dir.mkdirs();
 
@@ -519,7 +529,7 @@ public class fullConfigExport
 
             //adds the globalScripts to the main Array
             masterMirthExport.add("<globalScripts>");
-            String gsPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\globalScripts\\";
+            String gsPath = backupFolderPath+"\\fullMirthExport\\globalScripts\\";
             File gsDir = new File(gsPath);
             gsDir.mkdir();
             File[] globalScriptsDir = gsDir.listFiles();
@@ -557,7 +567,7 @@ public class fullConfigExport
 
         for(int ii=0;ii<pluginPropertiesFiles.length;ii++)
         {
-            String pluginFilesDir = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\";
+            String pluginFilesDir = backupFolderPath+"\\fullMirthExport\\configurationFiles\\";
             File currentPluginFile = new File(pluginFilesDir+pluginPropertiesFiles[ii]);
             try(Scanner configFileReader = new Scanner(currentPluginFile))
             {
@@ -597,7 +607,7 @@ public class fullConfigExport
         masterMirthExport.add("</pluginProperties>");
 
         //adds resourceProperties to the main Array
-        String resourcePropertiesPath = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\fullMirthExport\\configurationFiles\\resources";
+        String resourcePropertiesPath = backupFolderPath+"\\fullMirthExport\\configurationFiles\\resources";
         File resourcePropertiesFile = new File(resourcePropertiesPath);
 
         try(Scanner resourcePropReader = new Scanner(resourcePropertiesFile))
@@ -659,5 +669,93 @@ public class fullConfigExport
             e.printStackTrace();
         }
         return "version found";
+    }
+
+    public static String exportAlerts(String host) throws FileNotFoundException, SQLException
+    {
+        //Exports and edits the channelMetadata
+      try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement()) 
+      {
+        String query = "SELECT * FROM ALERT";
+        ResultSet rs = stmt.executeQuery(query);
+        ResultSetMetaData RSMD = rs.getMetaData();
+        int columns = RSMD.getColumnCount();
+
+        File configFilesDir = new File(backupFolderPath+"fullMirthExport\\Alerts");
+        configFilesDir.mkdirs();
+
+        try 
+        {
+        while (rs.next()) 
+        {
+            String fileName = rs.getString(2);
+            if (columns == 2 || fileName.length() > 100) 
+            {
+            int pos1 = fileName.indexOf("<name>") + 6;
+            int pos2 = fileName.indexOf("</name>");
+            fileName = fileName.substring(pos1, pos2);
+            }
+            fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
+                
+            //CHANGE THIS BELOW
+            //THIS COLUMN INDEX chooses what data to convert to XML
+            // String XMLdata = rs.getString(3);
+            String XMLdata = rs.getString(3);
+
+            //exports all CONFIGURATION files to the specified directory
+            try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"fullMirthExport\\Alerts\\" + fileName)) 
+            {
+                XMLout.println(XMLdata);
+                XMLout.close();
+            } 
+            catch (FileNotFoundException fileExcept2) 
+            {
+                System.out.println("First channel export");
+                System.out.println("I DIDN'T FIND THE FILE");
+            }
+        }
+        }
+        catch (SQLException sqlExcept) 
+        {
+            System.out.println("FAILED MISERABLY");
+            System.out.println(sqlExcept);
+        }
+        }
+
+        
+        //adds Alerts to master Array
+        String alertSettings = backupFolderPath+"\\fullMirthExport\\Alerts\\";
+        File alertSettingList = new File(alertSettings);
+        alertSettingList.mkdir();
+        File[] alertFileList = alertSettingList.listFiles();
+        //if/else added to account for no alerts
+        if(alertFileList.length < 1)
+        {
+            masterMirthExport.add("<alerts/>");
+        }
+        else
+        {
+            masterMirthExport.add("<alerts>");
+
+            for(int k=0;k<alertFileList.length;k++)
+            {
+                try(Scanner channelGroupReader = new Scanner(alertFileList[k]))
+                {
+                  while(channelGroupReader.hasNext())
+                  {
+                    String line = channelGroupReader.nextLine();
+                    masterMirthExport.add(line);
+                  }
+                  channelGroupReader.close();
+                }
+                catch(FileNotFoundException e)
+                {
+                    System.out.println("I COULDN'T FIND THE channelGroup FILE");
+                }
+            }
+            masterMirthExport.add("</alerts>");
+            logCommands.exportToLog("EXPORTED - Alerts");
+        }
+    return "Alerts exported";
     }
 }
