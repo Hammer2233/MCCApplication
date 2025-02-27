@@ -1,31 +1,14 @@
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Scanner;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 public class SQLCommand 
 {
     static String backupFolderPath ="";
+
     public static String checkUN(String host)
     {
         backupFolderPath = Main.getBackupFolder();
@@ -65,5 +48,61 @@ public class SQLCommand
         {
             return currentUn;
         }
+    }
+
+    public static String resetUsernamePassword(String host)
+    {
+        int queryCount = 0;
+
+        while(queryCount <= 1)
+        {
+            try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+            {
+
+                if(queryCount == 0)
+                {
+                    String query = "UPDATE PERSON set USERNAME = 'admin' where ID = 1";
+                    int modifiedRows = stmt.executeUpdate(query);
+                    if(modifiedRows > 0)
+                    {
+                        logCommands.exportToLog("Username update SUCCESSFUL");
+                    }
+                    else
+                    {
+                        logCommands.exportToLog("Username update FAILED");
+                    }
+                }
+                else if(queryCount == 1)
+                {
+                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE PERSON_ID = 1";
+                    int modifiedRows = stmt.executeUpdate(query);
+                    if(modifiedRows > 0)
+                    {
+                        logCommands.exportToLog("Password update SUCCESSFUL");
+                    }
+                    else
+                    {
+                        logCommands.exportToLog("Password update FAILED");
+                    }
+                }
+            }
+            catch (SQLException e) 
+            {
+                System.out.println("Encountered SQL Error");
+                if(queryCount == 0)
+                {
+                    logCommands.exportToLog("Credential update FAILED");
+                    logCommands.exportToLog("CURRENT OPERATION ENCOUNTERED A SQL ERROR - No changes were made to the Mirth username");
+                }
+                else
+                {
+                    logCommands.exportToLog("CURRENT OPERATION ENCOUNTERED A SQL ERROR - No changes were made to the Mirth user's password");
+                    logCommands.exportToLog("ERROR : " + e.toString());
+                }
+                
+            }
+            queryCount++;
+        }
+        return "reset un and pw";
     }
 }

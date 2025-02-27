@@ -177,7 +177,7 @@ public class channelExport
               } 
               catch (FileNotFoundException fileExcept2) 
               {
-                  System.out.println("First channel export");
+                  System.out.println("Second channel export");
                   System.out.println("I DIDN'T FIND THE FILE");
               }
             
@@ -566,7 +566,7 @@ public class channelExport
               } 
               catch (FileNotFoundException fileExcept2) 
               {
-                System.out.println("First channel export");
+                System.out.println("Third channel export");
                 System.out.println("I DIDN'T FIND THE FILE");
               }
             }

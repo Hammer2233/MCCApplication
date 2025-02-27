@@ -236,6 +236,15 @@ public class Main
         File currentFile = new File(getBackupFolder()+files[i]);
         deleteDirectory(currentFile);
       }
+
+      if(new File(getBackupFolder()+"\\fullMirthExport").list().length < 1)
+      {
+        deleteDirectory(new File(getBackupFolder()+"\\fullMirthExport"));
+      }
+      else
+      {
+
+      }
       return "files deleted";
     }
 
