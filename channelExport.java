@@ -44,59 +44,96 @@ public class channelExport
     private static ArrayList curExtractedCT = new ArrayList<>();
     private static ArrayList allCTLArray = new ArrayList<>();
 
+    //boolean to determine if code templates are included
+    private static boolean includeCTLs;
+    private static boolean isFullMirthExport = false;
+
+    private static String backupFolderPath = Main.getBackupFolder();
+
+    public static boolean includeCodeTemplates(String yesNo)
+    {
+      if(yesNo == "YES")
+      {
+        includeCTLs = true;
+        return includeCTLs;
+      }
+      else
+      {
+        includeCTLs = false;
+        return includeCTLs;
+      }
+    }
+
+    public static boolean isFullMirthExportCheck(String yesNo)
+    {
+      if(yesNo == "YES")
+      {
+        isFullMirthExport = true;
+        return isFullMirthExport;
+      }
+      else
+      {
+        isFullMirthExport = false;
+        return false;
+      }
+    }
+
     public static String exportChannels(String host)
     {
-        //exports the channels (standard Merby export)
-        try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
-        {
-            String query = "SELECT * FROM CHANNEL";
-            ResultSet rs = stmt.executeQuery(query);
-            ResultSetMetaData RSMD = rs.getMetaData();
-            int columns = RSMD.getColumnCount();
+      //clears the channels folder before next write
+      clearChannelFolder();
 
-            try
-            {
-                while (rs.next()) 
-                {
-                    //creates folder path if it does not yet exist:
-                    File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup");
-                    dir.mkdirs();
-
-                    String fileName = rs.getString(2);
-                    if (columns == 2 || fileName.length() > 100) 
-                    {
-                    int pos1 = fileName.indexOf("<name>") + 6;
-                    int pos2 = fileName.indexOf("</name>");
-                    fileName = fileName.substring(pos1, pos2);
-                    }
-                    fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
-               
-                    //column containing CLOB
-                    String XMLdata = rs.getString(4);
-                    //exports all channel export files to the specified directory
-                    try (PrintWriter XMLout = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\" + fileName+".xml")) 
-                    {
-                        XMLout.println(XMLdata);
-                        XMLout.close();
-                    } 
-                    catch (FileNotFoundException fileExcept2) 
-                    {
-                        System.out.println("First channel export");
-                        System.out.println("I DIDN'T FIND THE FILE");
-                    }
-                }
-            } 
-            catch (SQLException sqlExcept) 
-            {
-                System.out.println("FAILED MISERABLY");
-                System.out.println(sqlExcept);
-            }
-        }
-        catch (Exception e) 
-        {
-          e.printStackTrace();
-        }
-        return "channels exported";
+      backupFolderPath = Main.getBackupFolder();
+		try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+		{
+		    String query = "SELECT * FROM CHANNEL";
+		    ResultSet rs = stmt.executeQuery(query);
+		    ResultSetMetaData RSMD = rs.getMetaData();
+		    int columns = RSMD.getColumnCount();
+		
+		    //creates folder path if it does not yet exist:
+		    File dir = new File(backupFolderPath+"channelBackup");
+		    dir.mkdirs();
+		
+		    try
+		    {
+		        while (rs.next()) 
+		        {                 
+		            String fileName = rs.getString(2);
+		            if (columns == 2 || fileName.length() > 100) 
+		            {
+		            int pos1 = fileName.indexOf("<name>") + 6;
+		            int pos2 = fileName.indexOf("</name>");
+		            fileName = fileName.substring(pos1, pos2);
+		            }
+		            fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
+		       
+		            //column containing CLOB
+		            String XMLdata = rs.getString(4);
+		            //exports all channel export files to the specified directory
+		            try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"channelBackup\\" + fileName+".xml")) 
+		            {
+		                XMLout.println(XMLdata);
+		                XMLout.close();
+		            } 
+		            catch (FileNotFoundException fileExcept2) 
+		            {
+		                System.out.println("First channel export");
+		                System.out.println("I DIDN'T FIND THE FILE");
+		            }
+		        }
+		    } 
+		    catch (SQLException sqlExcept) 
+		    {
+		        System.out.println("FAILED MISERABLY");
+		        System.out.println(sqlExcept);
+		    }
+		}
+		catch (Exception e) 
+		{
+		  e.printStackTrace();
+		}
+		return "channels exported";
     }
 
 
@@ -109,6 +146,9 @@ public class channelExport
           ResultSet rs = stmt.executeQuery(query);
           ResultSetMetaData RSMD = rs.getMetaData();
           int columns = RSMD.getColumnCount();
+
+          File configFilesDir = new File(backupFolderPath+"fullMirthExport\\configurationFiles");
+          configFilesDir.mkdirs();
 
           try 
           {
@@ -125,8 +165,19 @@ public class channelExport
                  
               //CHANGE THIS BELOW
               //THIS COLUMN INDEX chooses what data to convert to XML
-              // String XMLdata = rs.getString(3);
               String XMLdata = rs.getString(3);
+
+              //exports all CONFIGURATION files to the specified directory
+              try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"fullMirthExport\\configurationFiles\\" + fileName)) 
+              {
+                  XMLout.println(XMLdata);
+                  XMLout.close();
+              } 
+              catch (FileNotFoundException fileExcept2) 
+              {
+                  System.out.println("Second channel export");
+                  System.out.println("I DIDN'T FIND THE FILE");
+              }
             
               if(rs.getString(2).equals("channelMetadata"))
               {
@@ -134,7 +185,7 @@ public class channelExport
                 String capturedChannelID = "";
 
                 //creates the path if it doesn't exist
-                File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup");
+                File dir = new File(backupFolderPath+"channelBackup");
                 dir.getParentFile().mkdirs();
                 dir.mkdirs();
                 channelNames.clear(); //clears the current arraylist for channel names
@@ -154,7 +205,7 @@ public class channelExport
                 }
                 for(int c=0;c<channelNames.size();c++)
                 {
-                  File currentChannelXML = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\"+channelNames.get(c));
+                  File currentChannelXML = new File(backupFolderPath+"channelBackup\\"+channelNames.get(c));
                   try(Scanner channelDirReader = new Scanner(currentChannelXML))
                   {
                     while(channelDirReader.hasNext())
@@ -262,14 +313,14 @@ public class channelExport
                 }
 
                 //creates the directory if it does not yet exist:
-                File cmdDir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup\\");
+                File cmdDir = new File(backupFolderPath+"channelMetadataBackup\\");
                 cmdDir.getParentFile().mkdirs();
                 cmdDir.mkdirs();
 
                 //Prints files to the channelMetadata backup directory
                 for(int v=0;v<extractedCMDArray.size();v++)
                 {
-                  try (PrintWriter channelMetadataOut = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup\\" + channelIDs.get(v)+".xml"))
+                  try (PrintWriter channelMetadataOut = new PrintWriter(backupFolderPath+"channelMetadataBackup\\" + channelIDs.get(v)+".xml"))
                   {
                     channelMetadataOut.print(extractedCMDArray.get(v));
                   }
@@ -278,71 +329,42 @@ public class channelExport
                     System.out.println("I DIDN'T FIND THE channelMetadata FILE");
                   }
                 }
-
-                //Reformats the XML for the channelMetadata. Preps for appending to the channel XML
-                try 
+                
+                //Cleaned up channelMetadata Export
+                File metadataDir = new File(backupFolderPath+"channelMetadataBackup");
+                metadataDir.getParentFile().mkdirs();
+                File[] metadataDirectory = metadataDir.listFiles();
+                for(int m=0;m<metadataDirectory.length;m++)
                 {
-                  // Step 1: Create a DocumentBuilderFactory and DocumentBuilder
-                  DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                  DocumentBuilder builder = factory.newDocumentBuilder();
-          
-                  // Step 2: Parse the XML file
-                  File metadataDir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup");
-                  metadataDir.getParentFile().mkdirs();
-                  File[] metadataDirectory = metadataDir.listFiles();
-                  for(int m=0;m<metadataDirectory.length;m++)
-                  {
-                    Document document = builder.parse(new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup\\"+metadataDirectory[m].getName()));
-          
-                    // Step 3: Get the current root element
-                    org.w3c.dom.Element oldRoot = document.getDocumentElement();
-            
-                    // Step 4: Create new root element and metadata element
-                    org.w3c.dom.Element newRoot = document.createElement("exportData");
-                    org.w3c.dom.Element metadataElement = document.createElement("metadata");
-            
-                    // Step 5: Move all child nodes from old root to new root
-                    NodeList children = oldRoot.getChildNodes();
-                    for (int y=0; y<children.getLength(); y++) 
-                    {
-                      Node child = children.item(y);
-                     // Import the node to the new document and append it to the new root
-                      Node importedNode = document.importNode(child, true);
-                      metadataElement.appendChild(importedNode);
-                    }
-            
-                    // Step 6: Add metadata to the renamed root and replace the old root with the new root in the document
-                    newRoot.appendChild(metadataElement);
-                    document.replaceChild(newRoot, oldRoot);
-            
-                    // Step 7: Write the modified document to a new XML file
-                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                    Transformer transformer = transformerFactory.newTransformer();
-  
-                    transformer.setOutputProperty("indent", "yes");
-                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2"); // Amount of indentation
-                    transformer.setOutputProperty("method", "xml");
-  
-                    // Step 8: Process the output to add newlines without extra indentation
-                    // Write to a ByteArrayOutputStream instead of directly to a file
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    StreamResult result = new StreamResult(byteArrayOutputStream);
-                    transformer.transform(new DOMSource(document), result);
-  
-                    String xmlOutput = byteArrayOutputStream.toString("UTF-8");
-                    // Replace multiple carriage returns with a single linefeed
-                    xmlOutput = xmlOutput.replaceAll("(?m)^[ \t]*\r?\n", ""); // Remove empty lines
-                    xmlOutput = xmlOutput.replaceAll("(<[^/>]+>)\\s*(<)", "$1\n$2"); // Add newline after opening tags
-  
-                    // Write the final processed XML to a file
-                    FileOutputStream fos = new FileOutputStream("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup\\"+metadataDirectory[m].getName());
-                    fos.write(xmlOutput.getBytes("UTF-8"));
-                    fos.close();
-                  }                       
-                } 
-                catch (Exception e) 
-                {
-                  e.printStackTrace();
+                	ArrayList reformattedMD = new ArrayList();
+                	File currentMetadataFile = new File(backupFolderPath+"channelMetadataBackup\\"+metadataDirectory[m].getName());
+                	try(Scanner mdReader = new Scanner(currentMetadataFile))
+                	{
+                		//reformattedMD.add("<exportData>\n");
+                		reformattedMD.add("<exportData>\n");
+                		reformattedMD.add("<metadata>\n");
+                		while(mdReader.hasNext())
+                		{
+                			String line = mdReader.nextLine();
+                			if(!line.contains("com.mirth.connect.model.ChannelMetadata"))
+                			{
+                				reformattedMD.add(line+"\n");
+                			}
+                		}
+                		reformattedMD.add("</metadata>\n");
+                		reformattedMD.add("</exportData>");
+                	  
+                	  try (PrintWriter mdOutput = new PrintWriter(backupFolderPath+"channelMetadataBackup\\"+metadataDirectory[m].getName()))
+                	  {
+                		  for(int c=0;c<reformattedMD.size();c++)
+                		  {
+                			  mdOutput.print(reformattedMD.get(c));
+                		  }                	  	  
+                	  	  mdOutput.close();
+                	  }
+                	  mdReader.close();
+                	}
+                	reformattedMD.clear();
                 }
               }              
             } 
@@ -367,8 +389,11 @@ public class channelExport
          */
 
         //calls codeTemplates
-        exportCodeTemplates(host);
-
+        if(includeCTLs == true || isFullMirthExport == true)
+        {
+          exportCodeTemplates(host);
+        }
+        
         //1. Creates new arrays and loop
         ArrayList currentChannelXML = new ArrayList<>();
         ArrayList currentMetadata = new ArrayList<>();
@@ -382,7 +407,7 @@ public class channelExport
             currentChannelXML.add(splitCurrentChannelXML[n]);
           }
           //spilts the corresponding channelMetadata XML
-          File currentCMDFile = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelMetadataBackup\\" + channelIDs.get(c) + ".xml");
+          File currentCMDFile = new File(backupFolderPath+"channelMetadataBackup\\" + channelIDs.get(c) + ".xml");
           try(Scanner channelReader = new Scanner(currentCMDFile))
           {                      
             while(channelReader.hasNext())
@@ -397,7 +422,8 @@ public class channelExport
           //2. Removes the last item from the channel array, stores it for later, and adds the channelMetadata to the channel array
           String endOfChannelArray = currentChannelXML.get(currentChannelSize-1).toString();
           currentChannelXML.remove(currentChannelSize-1);
-          for(int p=1;p<currentMetadata.size();p++)
+//          for(int p=1;p<currentMetadata.size();p++)
+          for(int p=0;p<currentMetadata.size();p++)
           {
             currentChannelXML.add(currentMetadata.get(p));
           }
@@ -405,12 +431,12 @@ public class channelExport
 
  
           //3. Overwrites the data to the existing channel backup XML files
-          try (PrintWriter channelExportFinal = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\" + channelNames.get(c)))
+          try (PrintWriter channelExportFinal = new PrintWriter(backupFolderPath+"channelBackup\\" + channelNames.get(c)))
           {
             for (int h=0; h<currentChannelXML.size(); h++)
             {
-             channelExportFinal.print(currentChannelXML.get(h));
-             if(currentChannelXML.get(h).toString().contains("</metadata>"))
+             channelExportFinal.print(currentChannelXML.get(h)+"\n");
+             if(currentChannelXML.get(h).toString().contains("</metadata>") && includeCTLs == true)
              {
               for(int b=0;b<allCTLArray.size();b++)
               {
@@ -440,16 +466,15 @@ public class channelExport
         extractedCMDArray.clear();
         masterChannelXML.clear();
         extractedCMDArrayREORDERED.clear();
-        logCommands.returnArchivedChannels("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelBackup\\");
         return "metaDataExported";
     }
 
     public static String exportCodeTemplates(String host) throws FileNotFoundException
     {
       //creates backup directory if it does not exist
-      File dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      File dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
       dir.mkdirs();
-      dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\");
+      dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\");
       dir.mkdirs();
 
       //int to track if the first query has ran
@@ -495,13 +520,13 @@ public class channelExport
               if(queryCount == 0)
               {
                 query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
-                destination = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\";
+                destination = backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\";
 
               }
               else
               {
                 query = "SELECT * FROM CODE_TEMPLATE";
-                destination = "C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\";
+                destination = backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\";
               }
               try (PrintWriter XMLout = new PrintWriter(destination + fileName+".xml")) 
               {
@@ -510,7 +535,7 @@ public class channelExport
               } 
               catch (FileNotFoundException fileExcept2) 
               {
-                System.out.println("First channel export");
+                System.out.println("Third channel export");
                 System.out.println("I DIDN'T FIND THE FILE");
               }
             }
@@ -538,7 +563,7 @@ public class channelExport
       }
       for(int c=0;c<codeTemplateNames.size();c++)
       {        
-        File currentCTXML = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplates\\"+codeTemplateNames.get(c));
+        File currentCTXML = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\"+codeTemplateNames.get(c));
         try(Scanner channelDirReader = new Scanner(currentCTXML))
         {
           while(channelDirReader.hasNext())
@@ -553,7 +578,7 @@ public class channelExport
       }
 
       //reads the code template library and appends the code template information
-      dir = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
       File[] codeTemplateLibraryDir = dir.listFiles();
       //gets names of code template libraries
       for(int j=0;j<codeTemplateLibraryDir.length;j++)
@@ -568,7 +593,7 @@ public class channelExport
       //appends the channel template to the channel template library 
       for(int v=0;v<codeTemplateLibraryNames.size();v++)
       {
-        File currentCodeTemplateLibXML = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v));
+        File currentCodeTemplateLibXML = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v));
         try(Scanner channelDirReader = new Scanner(currentCodeTemplateLibXML))
         {
           //this loop does the following:
@@ -606,6 +631,7 @@ public class channelExport
            * 5. Add to array and write it out
            */
           int idSkipper = 0;
+          boolean foundIDInCT = false;
           for(int y=0;y<currentCodeTemplateLib.size();y++)
           {
             String currentPoint = currentCodeTemplateLib.get(y).toString();
@@ -620,6 +646,9 @@ public class channelExport
               {
                 if(completeCodeTemplates.get(s).toString().contains(currentCapID))
                 {
+                  //added for evaluation to see if found ID is in a code template library
+                  foundIDInCT = true;
+
                   String editedCTString = "";
                   String[] splitCTByNL = completeCodeTemplates.get(s).toString().split("\n");
     
@@ -638,7 +667,31 @@ public class channelExport
                   editedCTString = "";
                   curExtractedCT.clear();
                 }
-              }              
+                else if(s == completeCodeTemplates.size()-1 && foundIDInCT == false)
+                {
+                  for(int n=0;n<3;n++)
+                  {
+                    if(n==0)
+                    {
+                      currentCodeTemplateLib.remove(y+1);
+                    }
+                    else if(n==1)
+                    { 
+                      currentCodeTemplateLib.remove(y);
+                    }
+                    else if (n==2)
+                    {
+                      currentCodeTemplateLib.remove(y-1);
+                    }
+                    else
+                    {
+                      System.out.println("FIRED ON 3");
+                    }
+                  }
+                  y = y-3;
+                }
+              }            
+              foundIDInCT = false;  
             }
           }
           idSkipper = 0;
@@ -646,7 +699,7 @@ public class channelExport
           //adds the first tag
 
           //writes to file
-          try (PrintWriter cTLOutput = new PrintWriter("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v)))
+          try (PrintWriter cTLOutput = new PrintWriter(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v)))
           {
             String appendedCTLMasterAddition = "";
             for(int c=0;c<currentCodeTemplateLib.size();c++)
@@ -658,11 +711,6 @@ public class channelExport
             appendedCTLMasterAddition = "";
             cTLOutput.close();
           }
-
-          for(int h=0;h<codeTemplateIDs.size();h++)
-          {
-            //System.out.println(codeTemplateIDs.get(h));
-          }
           codeTemplateIDs.clear();
         }
         currentCodeTemplateLib.clear();
@@ -673,12 +721,12 @@ public class channelExport
 
       //the below code creates a master codeTemplateLibrary String from all x CTLs
       String allCodeTemplateLibraries = "";
-      File ctLDIR = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+      File ctLDIR = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
       ctLDIR.getParentFile().mkdirs();
       File[] codeTemplateLibraryDirectoryList = ctLDIR.listFiles();
       for(int m=0;m<codeTemplateLibraryDirectoryList.length;m++)
       {
-        File currentCTLFile = new File("C:\\AntekHW\\CALEBMIRTHTESTING\\FullChannelExport\\channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryDirectoryList[m].getName());
+        File currentCTLFile = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryDirectoryList[m].getName());
         try(Scanner channelDirReader = new Scanner(currentCTLFile))
         {
           while(channelDirReader.hasNext())
@@ -689,5 +737,22 @@ public class channelExport
         }
       }
       return "codeTemplates and Libraries Exported";
+    }
+
+    public static String clearChannelFolder()
+    {
+      File channelDirFileList = new File(backupFolderPath+"channelBackup\\");
+      if(channelDirFileList.exists())
+      {
+        String[] entries = channelDirFileList.list();
+        for (String s : entries) 
+        {
+          File currentFile = new File(channelDirFileList.getPath(), s);
+          //System.out.println("CURRENT FILE: " + currentFile);
+          currentFile.delete();
+          //System.out.println("FILE EXISTS?: " + currentFile.exists());
+        }
+      }
+      return "channel folder cleared";
     }
 }

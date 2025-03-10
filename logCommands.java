@@ -1,4 +1,3 @@
-//import org.w3c.dom.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -73,6 +72,51 @@ public class logCommands
         exportCurrentLogToWindow();
         return "";        
     }
+
+    public static String exportToLog(String given)
+    {
+        //boolean to see if the log file and logThis has been initalized
+        if(checkLogNeeded == true)
+        {
+            try 
+            {
+                checkLogFile();
+                checkLogNeeded = false;
+            } 
+            catch (FileNotFoundException e) 
+            {
+                System.out.println("FAILED TO CHECK LOG FILE");
+            }
+        }
+        logThis.print(getDateTime()+ " " + given + "\n");
+        activeSessionLog.add(getDateTime()+ " " + given + "\n");
+        logThis.flush();
+        applicationWindow.setLogWindow();
+        return "";
+    }
+
+    public static String exportToLogColored(String given, String color)
+    {
+        //boolean to see if the log file and logThis has been initalized
+        if(checkLogNeeded == true)
+        {
+            try 
+            {
+                checkLogFile();
+                checkLogNeeded = false;
+            } 
+            catch (FileNotFoundException e) 
+            {
+                System.out.println("FAILED TO CHECK LOG FILE");
+            }
+        }
+        logThis.print(getDateTime()+ " " + given + "\n");
+        activeSessionLog.add(getDateTime()+ " " + given + "\n");
+        logThis.flush();
+        applicationWindow.setLogWindow();
+        return "";
+    }
+
 
     public static String exportCurrentLogToWindow()
     {
