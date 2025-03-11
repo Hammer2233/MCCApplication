@@ -133,7 +133,7 @@ public class SQLCommand
                 }
                 else if(queryCount == 1)
                 {
-                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = '+yw1sVEPu7R68lE97Hrpbbn1qRZDzS4q3P9pzfUBsMYJFRhdVlucaQ==' WHERE PERSON_ID = 1";
+                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = 1";
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {

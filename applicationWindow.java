@@ -11,8 +11,12 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -89,7 +93,7 @@ public class applicationWindow extends JFrame implements ActionListener
         setLayout(new BorderLayout());
         
         // button area. West of application
-        setTitle("MCC-BETA");
+        setTitle("MCC");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -531,7 +535,7 @@ public class applicationWindow extends JFrame implements ActionListener
         commandPWSpace.setText("");
 
         //events for each possible password/command
-        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme"};
+        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme", "enablebackup"};
         for(int i=0;i<validCommands.length;i++)
         {
             if(captured.toLowerCase().equals(validCommands[i]) && i==0 && toggleEnabled == false)
@@ -582,13 +586,64 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands"};
+            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby"};
                 int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, null, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
                 	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
                 }
                 System.out.println("Chosen: " + changeThemeChoice);                
+            }
+            if(captured.toLowerCase().equals(validCommands[i]) && i==4)
+            {
+            	logCommands.exportToLog("Please select the backup destination");
+            	String autoBackupPath;
+                JFileChooser chooseFolder = new JFileChooser("C:\\");
+                chooseFolder.setDialogTitle("SELECT DESTINATION FOR BACKUP");
+                chooseFolder.setFileSelectionMode(1);
+                chooseFolder.setAcceptAllFileFilterUsed(false);
+                if (chooseFolder.showOpenDialog(labelVersion) == 0) 
+                {
+                	autoBackupPath = chooseFolder.getSelectedFile().getAbsolutePath() + "\\";
+                	logCommands.exportToLog("Destination selected: " + autoBackupPath);
+                	
+                	File backupDir = new File(autoBackupPath+"-MCC Sidekick-Mirth Backups-\\-backupConfigSettings-");
+                	                	
+                	if(backupDir.exists())
+                	{
+                		logCommands.exportToLog("FILES FOUND IN SPECIFIED DIRECTORY");
+                		Object[] options = {"OVERWRITE", "CANCEL"};
+                        int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "MCC Backup configuration files detected in the specified directory:\n'"+autoBackupPath+"'.\nOverwrite files in the directory?\n\nNOTE: THIS WILL OVERWRITE ANY CURRENT BACKUP CONFIGURATIONS IN\nTHE 'backupConfigurationSettings.mcc' FILE", "OVERWRITE DIRECTORY?", 0, 2, null, options, options[1]);
+                        if(changeThemeChoice == 0)
+                        {
+                        	for(File file: backupDir.listFiles()) 
+                        	{
+                        	    if (!file.isDirectory()) 
+                        	    {
+                        	        file.delete();
+                        	    }
+                        	}
+                        	enableAutoBackups(autoBackupPath+"-MCC Sidekick-Mirth Backups-\\");
+                        }
+                        else
+                        {
+                        	logCommands.exportToLog("OPERATION CANCELLED");
+                        	logCommands.exportToLog("FILES IN '" + autoBackupPath + "' NOT TOUCHED");
+                        }
+                	}
+                	else
+                	{
+                		backupDir.getParentFile().mkdirs();
+                    	backupDir.mkdirs();
+                    	enableAutoBackups(autoBackupPath+"-MCC Sidekick-Mirth Backups-\\");
+                	}
+                } 
+                else 
+                {
+                	autoBackupPath = "";
+                	logCommands.exportToLog("NO DESTINATION SELECTED. Auto-Backup setup cancelled");
+                }
+                System.out.println("autoBackupPath: " + autoBackupPath);
             }
         }
 
@@ -622,6 +677,63 @@ public class applicationWindow extends JFrame implements ActionListener
     	exportChanInfo.setEnabled(toggleEnabled);
     	exportMirthConfigInfo.setEnabled(toggleEnabled);
     	return "disabled";
+    }
+    
+    //Sets up the scheduled backup directory
+    private static String enableAutoBackups(String chosenPath)
+    {
+    	logCommands.exportToLog("Navigate to the folder to finish setup");
+
+        // Ensure backup directory exists
+        File targetDirectory = new File(chosenPath + "\\-backupConfigSettings-");
+        if (!targetDirectory.exists()) {
+            targetDirectory.mkdirs(); // Create directories if they don't exist
+        }
+
+        // Create batch file
+        try (PrintWriter batWriter = new PrintWriter(targetDirectory + "\\MCC-TARGET_ME.bat")) {
+            batWriter.print("@echo off\nset service=\"Mirth Connect Service\"\nnet stop %service%\n\nTIMEOUT /T 10\nTASKKILL /F /FI \"SERVICES eq Mirth Connect Service\"\n\nnet.exe session 1>NUL 2>&1\nif %ErrorLevel% equ 0 (\ncd /d %~dp0\nstart javaw -jar MCC-SIDEKICK.jar\n) else (\n    echo Batch file is NOT running as an Admin. Please run Batch file with Admin privileges.\n    pause\n)\n\nTIMEOUT /T 30\nnet start %service%\nTIMEOUT /T 4");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        // Create configuration file and copy JAR
+        try (PrintWriter configWriter = new PrintWriter(targetDirectory + "\\backupConfigurationSettings.mcc")) {
+            URL sideKick = applicationWindow.class.getResource("/MCC-SIDEKICK.jar");
+
+            configWriter.print("--Altering the values below customizes the backup and retention when MCC-SIDEKICK runs\n--Be sure to target the \"MCC-TARGET_ME.bat\" file from Windows Task Scheduler as admin to run the backups\nDELETE BACKUP FILES OLDER THAN(Days): 30\nCURRENT BACKUP DIRECTORY: " + chosenPath);
+
+            if (sideKick != null) {
+                try {
+                    copySidekickToDIR(sideKick, targetDirectory.getAbsolutePath() + "\\");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("MCC-SIDEKICK.jar could not be found in the JAR.");
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return "backup enabled";
+    }
+    
+    private static void copySidekickToDIR(URL sideKick, String toPath) throws IOException 
+    {
+    	File outputFile = new File(toPath + "MCC-SIDEKICK.jar"); // Ensure you have the full file name
+        try (InputStream inputStream = sideKick.openStream();
+             FileOutputStream outputStream = new FileOutputStream(outputFile)) 
+        {
+
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = inputStream.read(buffer)) != -1) 
+            {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        }
     }
     
     //changes colors of buttons and backgrounds
@@ -794,6 +906,39 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(new java.awt.Color(243, 113, 153));
+    	}
+    	else if(chosenTheme == 5)
+    	{
+    		//Merby theme    		
+    		logTextArea.setBackground(new java.awt.Color(254, 249, 205));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		bottomButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		westPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		centerPanel.setBackground(new java.awt.Color(0, 51, 102));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.BLACK);
+    		archiveChannels.setBackground(Color.WHITE);
+
+    		fullMirthExport.setForeground(Color.BLACK);
+    		fullMirthExport.setBackground(Color.WHITE);
+
+    		checkUsernameButton.setForeground(Color.BLACK);
+    		checkUsernameButton.setBackground(Color.WHITE);
+
+    		changeUNandPW.setForeground(Color.BLACK);
+    		changeUNandPW.setBackground(Color.WHITE);
+
+    		changeBackupPath.setForeground(Color.BLACK);
+    		changeBackupPath.setBackground(Color.WHITE);
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(Color.WHITE);
     	}
     	return "theme changed";
     }
