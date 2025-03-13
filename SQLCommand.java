@@ -99,7 +99,7 @@ public class SQLCommand
                     logCommands.exportToLog("ERROR : " + e.toString());
                     if(e.toString().contains("read-only connection"))
                     {
-                    	logCommands.exportToLog("Tip: 'read-only' errors are likely permissoin based. Ensure the program has been ran as admin via the batch file");
+                    	logCommands.exportToLog("Tip: 'read-only' errors are likely permission based. Ensure the program has been ran as admin via the batch file");
                     }
                 }
                 
