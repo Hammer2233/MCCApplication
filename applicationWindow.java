@@ -50,6 +50,7 @@ public class applicationWindow extends JFrame implements ActionListener
     
     //Jpanels
     private static JPanel topButtonPanel;
+    private static JPanel imagePanel;
     private static JPanel bottomMidButtonsPanel;
     private static JPanel westPanel;
     private static JPanel centerPanel;
@@ -62,6 +63,7 @@ public class applicationWindow extends JFrame implements ActionListener
     private static JButton changeMirthDirPath;
     private static JButton exportChanInfo;
     private static JButton exportMirthConfigInfo;
+    private static JButton mccInfoButton;
     private JButton exitApplication;
     private static JPasswordField commandPWSpace;
     private JButton runCommand;
@@ -168,34 +170,44 @@ public class applicationWindow extends JFrame implements ActionListener
         changeMirthDirPath.setBackground(new java.awt.Color(252, 233, 204));
         westPanel.add(changeMirthDirPath);
         
-        //new JPanel and GridBagLayout for left-mid section of application
-        bottomMidButtonsPanel = new JPanel();
-        bottomMidButtonsPanel.setBackground(new java.awt.Color(214, 216, 233));
-        bottomMidButtonsPanel.setLayout(topButtonGridbag);
-
+        //JPanel for image
+        imagePanel = new JPanel();
+        imagePanel.setBackground(new java.awt.Color(214, 216, 233));
+        imagePanel.setLayout(topButtonGridbag);
+        
         topGBC.gridx = 0;
         topGBC.gridy = 0;
         
         JLabel label = new JLabel();
         label.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/MCC-logo.png")).getImage().getScaledInstance(215, 100, Image.SCALE_DEFAULT)));
-        //label.setIcon(new ImageIcon(new ImageIcon("src/MCC-logo.png").getImage().getScaledInstance(215, 100, Image.SCALE_DEFAULT)));
         
-        //Image icon = ImageIO.read(new File("/MCC Images/MCC-Icon.png"));
-		//Image icon = ImageIO.read(new File("src/MCC-Icon.png"));
 		ImageIcon icon = new ImageIcon(getClass().getResource("/MCC-Icon.png"));
 		setIconImage(icon.getImage());
         
-        //bottomMidButtonsPanel.add(fillerPanel, topGBC);
-        bottomMidButtonsPanel.add(label, topGBC);
+		imagePanel.add(label, topGBC);
+		westPanel.add(imagePanel);
+
+        //new JPanel and GridBagLayout for left-mid section of application
+        bottomMidButtonsPanel = new JPanel();
+        bottomMidButtonsPanel.setBackground(new java.awt.Color(214, 216, 233));
+        bottomMidButtonsPanel.setLayout(topButtonGridbag);
+        
+        topGBC.gridx = 0;
+        topGBC.gridy = 0;
 
         topGBC.gridx = 0;
         topGBC.gridy = 1;
         exitApplication = new JButton("EXIT");
-        exitApplication.setPreferredSize(new Dimension(215,27));
+        exitApplication.setPreferredSize(new Dimension(165,27));
         exitApplication.addActionListener(new exitApplication());
         exitApplication.setForeground(new java.awt.Color(240,40,40));
         exitApplication.setBackground(new java.awt.Color(255, 238, 238));
         bottomMidButtonsPanel.add(exitApplication, topGBC);
+        
+        topGBC.gridx = 1;
+        mccInfoButton = new JButton("[?]");
+        mccInfoButton.addActionListener(new returnMCCInfo());
+        bottomMidButtonsPanel.add(mccInfoButton, topGBC);
 
         westPanel.add(bottomMidButtonsPanel);
 
@@ -243,13 +255,22 @@ public class applicationWindow extends JFrame implements ActionListener
         
         centerPanel.setVisible(true);
         centerPanel.add(logTextScroll);
-        centerPanel.setPreferredSize(new Dimension(830, 330));
+        centerPanel.setPreferredSize(new Dimension(830, 335));
         add(centerPanel, BorderLayout.CENTER);
         
         toggleButtons(toggleEnabled);
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
+    }
+    
+    private static class returnMCCInfo implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+        	JOptionPane.showMessageDialog(labelVersion, "==========================M.C.C.==========================\nMCC (Mirth Configuration Creator)\nProgrammed by Caleb Meyers\n\nMascot: Octopus 'Cam', have you 'Checked Access to Mirth'?\nRun a Cam on affected client's databases\n\nMCC determines database status while providing multiple recovery options\nJAVA Version: 8+\nOS: Windows XP+\nMirth: Tested Version 3.1+s");
+        }
     }
 
     @Override
@@ -754,6 +775,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(214, 216, 233));
     		westPanel.setBackground(new java.awt.Color(214, 216, 233));
     		centerPanel.setBackground(new java.awt.Color(214, 216, 233));
+    		imagePanel.setBackground(new java.awt.Color(214, 216, 233));
 
     		//buttons
     		archiveChannels.setForeground(new java.awt.Color(0,196,3));
@@ -787,6 +809,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(64, 64, 64));
     		westPanel.setBackground(new java.awt.Color(64, 64, 64));
     		centerPanel.setBackground(new java.awt.Color(64, 64, 64));
+    		imagePanel.setBackground(new java.awt.Color(64, 64, 64));
 
     		//buttons
     		archiveChannels.setForeground(Color.BLACK);
@@ -820,6 +843,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(255, 247, 241));
     		westPanel.setBackground(new java.awt.Color(255, 247, 241));
     		centerPanel.setBackground(new java.awt.Color(255, 247, 241));
+    		imagePanel.setBackground(new java.awt.Color(255, 247, 241));
 
     		//buttons
     		archiveChannels.setForeground(Color.BLACK);
@@ -854,6 +878,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(152, 210, 192));
     		westPanel.setBackground(new java.awt.Color(152, 210, 192));
     		centerPanel.setBackground(new java.awt.Color(246, 248, 213));
+    		imagePanel.setBackground(new java.awt.Color(152, 210, 192));
 
     		//buttons
     		archiveChannels.setForeground(Color.BLACK);
@@ -887,6 +912,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(249, 237, 105));
     		westPanel.setBackground(new java.awt.Color(249, 237, 105));
     		centerPanel.setBackground(new java.awt.Color(106, 44, 112));
+    		imagePanel.setBackground(new java.awt.Color(249, 237, 105));
 
     		//buttons
     		archiveChannels.setForeground(Color.BLACK);
@@ -920,6 +946,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		bottomButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
     		westPanel.setBackground(new java.awt.Color(0, 51, 102));
     		centerPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		imagePanel.setBackground(new java.awt.Color(0, 51, 102));
 
     		//buttons
     		archiveChannels.setForeground(Color.BLACK);
