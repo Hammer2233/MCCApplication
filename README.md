@@ -6,3 +6,4 @@ This application is being developed for creating full channel backups including 
 2/8/2025 - First full export successfully tested. Exports full channel information, exports channelMetadata, and creates a full channel export in ".xml" format
 2/11/2025 - Added first rough GUI. Contains an "Export Channels" button to trigger the channelExport. Includes log text area that updates post export completion
 2/18/2025 - Added logic to do a full channel export with CodeTemplateLibraries and metadata
+3/13/2025 - Fully coded application that exports channels, code template libraries, and full Mirth exports. Added themes, several commands for updating passwords and enabling backups. Packaged with the MCC-SIDEKICK.jar file for running automatic backups. Tested on 15+ clients, 2 mirth blowouts, and 8 scheduled Mirth backups
