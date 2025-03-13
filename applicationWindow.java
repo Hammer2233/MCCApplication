@@ -17,6 +17,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -305,12 +307,13 @@ public class applicationWindow extends JFrame implements ActionListener
     public static String runChannelExport()
     {
     	String serviceState = Main.checkMirthService();
+    	String host = Main.returnHost();
     	if(serviceState == "STOPPED")
     	{
     		Main.setBackupFolder();
             channelExport.isFullMirthExportCheck("NO");
             System.out.println("PERFORMING CHANNEL BACKUP");
-            String host = Main.returnHost();
+            //String host = Main.returnHost();
             channelExport exportChannels = new channelExport();
             channelExport.exportChannels(host);
             channelExport exportMetadata = new channelExport();
@@ -335,7 +338,7 @@ public class applicationWindow extends JFrame implements ActionListener
     	{
     		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
     	}
-    	
+    	killConnection(host);
         return "exported channels";
     }
 
@@ -345,6 +348,7 @@ public class applicationWindow extends JFrame implements ActionListener
         public void actionPerformed(ActionEvent e)
         {
         	String serviceState = Main.checkMirthService();
+        	String host = Main.returnHost();
         	if(serviceState == "STOPPED")
         	{
                 channelExport.clearChannelFolder();
@@ -352,7 +356,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
                 channelExport.isFullMirthExportCheck("YES");
                 
-                String host = Main.returnHost();
+                //String host = Main.returnHost();
                 channelExport exportChannels = new channelExport();
                 channelExport.exportChannels(host);
                 channelExport exportMetadata = new channelExport();
@@ -392,6 +396,7 @@ public class applicationWindow extends JFrame implements ActionListener
         	{
         		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
         	}
+        	killConnection(host);
         }
     }
 
@@ -969,4 +974,28 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	return "theme changed";
     }
+    
+    private static String killConnection(String host) 
+    {
+        try 
+        {
+            DriverManager.getConnection(host + ";shutdown=true");
+        } 
+        catch (SQLException e) 
+        {
+            if (e.getMessage().contains("shutdown")) 
+            {
+                logCommands.exportToLog("Database connection shut down.");
+            } 
+            else 
+            {
+                e.printStackTrace();
+                logCommands.exportToLog("Could not shutdown database.");
+            }
+            return "connection kill failed";
+        }
+        logCommands.exportToLog("Database shut down successfully.");
+        return "connection killed";
+    }
+    
 }
