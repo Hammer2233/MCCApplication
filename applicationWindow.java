@@ -260,6 +260,11 @@ public class applicationWindow extends JFrame implements ActionListener
         centerPanel.setPreferredSize(new Dimension(830, 335));
         add(centerPanel, BorderLayout.CENTER);
         
+        //sets theme to anything other than the OG
+        //currently set to "lite"
+        changeTheme(2, "startedApp");
+        //End setting theme
+        
         toggleButtons(toggleEnabled);
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -271,7 +276,7 @@ public class applicationWindow extends JFrame implements ActionListener
         @Override
         public void actionPerformed(ActionEvent e)
         {
-        	JOptionPane.showMessageDialog(labelVersion, "==========================M.C.C.==========================\nMCC (Mirth Configuration Creator)\nProgrammed by Caleb Meyers\n\nMascot: Octopus 'Cam', have you 'Checked Access to Mirth'?\nRun a Cam on affected client's databases\n\nMCC determines database status while providing multiple recovery options\nJAVA Version: 8+\nOS: Windows XP+\nMirth: Tested Version 3.1+s");
+        	JOptionPane.showMessageDialog(labelVersion, "==========================M.C.C.==========================\nMCC (Mirth Configuration Creator)\nProgrammed by Caleb Meyers\n\nMascot: Octopus 'Cam', have you 'Checked Access to Mirth'?\nRun a Cam on affected client's databases\n\nMCC provides multiple recovery options\nJAVA Version: 8+\nOS: Tested Windows 7+\nMirth: Tested Version 3.1+");
         }
     }
 
@@ -466,7 +471,7 @@ public class applicationWindow extends JFrame implements ActionListener
         {
             logCommands.exportToLog("Changing Target Mirth database directory");
             Object[] options = { "CONTINUE", "CANCEL" };
-            int changeMirthDBLocation = JOptionPane.showOptionDialog(labelVersion, "When choosing the new DB directory\ndo not select the 'mirthdb' folder.", "EXPORT MIRTH CHANNEL", 0, 2, null, options, options[1]);
+            int changeMirthDBLocation = JOptionPane.showOptionDialog(labelVersion, "When choosing the new DB directory\ndo not select the 'mirthdb' folder.\n\nPath Examples:\n'C:\\Program Files\\Mirth Connect\\appdata'\n'C:\\Program Files\\Mirth Connect'", "EXPORT MIRTH CHANNEL", 0, 2, null, options, options[1]);
             if (changeMirthDBLocation == 0)
             {
                 System.out.println("ACKd");
@@ -765,7 +770,11 @@ public class applicationWindow extends JFrame implements ActionListener
     //changes colors of buttons and backgrounds
     private static String changeTheme(int chosenTheme, String themeName)
     {
-    	logCommands.exportToLog("THEME CHANGED: -" + themeName);
+    	if(themeName != "startedApp")
+    	{
+    		logCommands.exportToLog("THEME CHANGED: -" + themeName);
+    	}
+    	    	
     	if(chosenTheme == 0)
     	{
     		//Original
