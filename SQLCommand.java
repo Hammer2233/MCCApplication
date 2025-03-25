@@ -3,11 +3,13 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 
 public class SQLCommand 
 {
     static String backupFolderPath ="";
+    private static ArrayList usernameList = new ArrayList();
 
     public static String checkUN(String host)
     {
@@ -15,6 +17,7 @@ public class SQLCommand
         String currentUn = "";
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
+        	usernameList.clear();
             String query = "SELECT * FROM PERSON";
             ResultSet rs = stmt.executeQuery(query);
 
@@ -25,6 +28,8 @@ public class SQLCommand
                     //column containing Username
                     String XMLdata = rs.getString(2);
                     currentUn = XMLdata;
+                    usernameList.add(currentUn);
+                    System.out.println("currentUsername:" + currentUn);                
                 }
             } 
             catch (SQLException sqlExcept) 
@@ -48,10 +53,30 @@ public class SQLCommand
             return currentUn;
         }
     }
+    
+    public static int unArraySize()
+    {
+    	int size = usernameList.size();
+    	System.out.println("Username Array Size: " + size);
+    	return size;
+    }
+    
+    public static String readUsernameArraylist(int currentCall)
+    {
+    	String returnMe = usernameList.get(currentCall).toString();
+    	return returnMe;
+    }
+    
+    public static ArrayList returnArraylist()
+    {
+    	return usernameList;
+    }
 
-    public static String resetUsernamePassword(String host)
+    public static String resetUsernamePassword(String host, int usernameToChange)
     {
         int queryCount = 0;
+        String chosenUn = readUsernameArraylist(usernameToChange-1).toString();
+        logCommands.exportToLog("Username selected to reset credentials: " + chosenUn);
 
         while(queryCount <= 1)
         {
@@ -60,7 +85,7 @@ public class SQLCommand
 
                 if(queryCount == 0)
                 {
-                    String query = "UPDATE PERSON set USERNAME = 'admin' where ID = 1";
+                    String query = "UPDATE PERSON set USERNAME = 'admin' where ID = "+usernameToChange;
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -73,7 +98,7 @@ public class SQLCommand
                 }
                 else if(queryCount == 1)
                 {
-                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE PERSON_ID = 1";
+                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE PERSON_ID = "+usernameToChange;
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -109,9 +134,11 @@ public class SQLCommand
         return "reset un and pw";
     }
     
-    public static String changeUNandPWCMD(String host)
+    public static String changeUNandPWCMD(String host, int targetUsername)
     {
         int queryCount = 0;
+        String chosenUn = readUsernameArraylist(targetUsername-1).toString();
+        logCommands.exportToLog("Username selected to reset credentials: " + chosenUn);
 
         while(queryCount <= 1)
         {
@@ -120,7 +147,7 @@ public class SQLCommand
 
                 if(queryCount == 0)
                 {
-                    String query = "UPDATE PERSON set USERNAME = 'labdaq' where ID = 1";
+                    String query = "UPDATE PERSON set USERNAME = 'labdaq' where ID = "+targetUsername;
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -133,7 +160,7 @@ public class SQLCommand
                 }
                 else if(queryCount == 1)
                 {
-                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = 1";
+                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = "+targetUsername;
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
