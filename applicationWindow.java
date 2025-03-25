@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.awt.Insets;
 import java.awt.Toolkit;
@@ -97,7 +98,8 @@ public class applicationWindow extends JFrame implements ActionListener
         setLayout(new BorderLayout());
         
         // button area. West of application
-        setTitle("MCC");
+        //change for each version
+        setTitle("MCC -v2.2.1");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -419,9 +421,29 @@ public class applicationWindow extends JFrame implements ActionListener
         {
             logCommands.exportToLog("Running Query for current Mirth username");
             String host = Main.returnHost();
-            String currentUsername = SQLCommand.checkUN(host);
-            logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
-            JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
+            SQLCommand.checkUN(host);
+            int howManyUsernames = SQLCommand.unArraySize();
+            
+            if(howManyUsernames > 1)
+            {
+            	String unList = "";
+            	for(int i=0;i<howManyUsernames;i++)
+            	{
+            		int currenti = i;
+            		String currentUn = SQLCommand.readUsernameArraylist(i);
+            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+                    String formattedUN = "'" + currentUn + "'";
+                    unList = unList + formattedUN + "\n";
+            	}
+            	JOptionPane.showMessageDialog(labelVersion, "Usernames are: \n" + unList);
+            }
+            else
+            {
+            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames);
+            	logCommands.exportToLog("CURRENT USERNAME(s): " + currentUsername);
+                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
+            }
+            killConnection(host);
         }
     }
 
@@ -508,8 +530,29 @@ public class applicationWindow extends JFrame implements ActionListener
         	{
                 if (changeMirthUN == 0)
                 {
-                    System.out.println("CHOSE TO CHANGE PW");
-                    SQLCommand.resetUsernamePassword(host);
+                	SQLCommand.checkUN(host);
+                	int whichUsername = SQLCommand.unArraySize();
+                	
+                	if(whichUsername > 1)
+                	{
+                		ArrayList listOfUsernames = new ArrayList<Object>(SQLCommand.returnArraylist());
+                		Object[] unOptions = listOfUsernames.toArray();
+                        int selectedUsername = JOptionPane.showOptionDialog(labelVersion, "Multiple Mirth usernames detected.\nPlease select the username to update:\n", "SELECT USERNAME TO CHANGE", 0, 2, null, unOptions, unOptions[1]);
+                        if(selectedUsername < 0)
+                        {
+                        	logCommands.exportToLog("Username and Password NOT changed");
+                        }
+                        else
+                        {
+                        	SQLCommand.resetUsernamePassword(host, selectedUsername+1);
+                        }
+                	}
+                	else
+                	{
+                		System.out.println("CHOSE TO CHANGE PW");
+                        SQLCommand.resetUsernamePassword(host, 1);
+                	}
+                    killConnection(host);
                 }
                 else if(changeMirthUN == 1)
                 {
@@ -571,7 +614,6 @@ public class applicationWindow extends JFrame implements ActionListener
         {
             if(captured.toLowerCase().equals(validCommands[i]) && i==0 && toggleEnabled == false)
             {
-                System.out.println("I MATCHED PASSWORD");
                 toggleEnabled = true;
                 toggleButtons(toggleEnabled);
                 logCommands.exportToLog("Password correct - Enabling buttons");
@@ -601,10 +643,31 @@ public class applicationWindow extends JFrame implements ActionListener
             {
             	System.out.println("UPDATING UN and PW");
             	String serviceStatus = Main.checkMirthService();
+            	String host = Main.returnHost();
             	if(serviceStatus.equals("STOPPED"))
             	{
-            		String host = Main.returnHost();
-            		SQLCommand.changeUNandPWCMD(host);
+            		SQLCommand.checkUN(host);
+                	int whichUsername = SQLCommand.unArraySize();
+                	
+                	if(whichUsername > 1)
+                	{
+                		ArrayList listOfUsernames = new ArrayList<Object>(SQLCommand.returnArraylist());
+                		Object[] unOptions = listOfUsernames.toArray();
+                        int selectedUsername = JOptionPane.showOptionDialog(labelVersion, "Multiple Mirth usernames detected.\nPlease select the username to update:\n", "SELECT USERNAME TO CHANGE", 0, 2, null, unOptions, unOptions[1]);
+                        if(selectedUsername < 0)
+                        {
+                        	logCommands.exportToLog("Username and Password NOT changed");
+                        }
+                        else
+                        {
+                        	SQLCommand.changeUNandPWCMD(host, selectedUsername+1);
+                        }
+                	}
+                	else
+                	{
+                		SQLCommand.changeUNandPWCMD(host, 1);
+                	}            		
+            		killConnection(host);
             	}
             	else if(serviceStatus.equals("STARTED"))
             	{
@@ -692,7 +755,6 @@ public class applicationWindow extends JFrame implements ActionListener
 
         //currentPassword = currDayOfMonth+"test"; //OLD TEST PASSWORD
         currentPassword = currDayOfMonth+"shells";
-        System.out.println("currentPassword: " + currentPassword);
 
         return currentPassword;
     }
