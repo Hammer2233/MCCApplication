@@ -82,23 +82,11 @@ public class SQLCommand
         {
             try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
             {
-
+            	//Changed logic in 2.2.1 to update password first, then changing username
                 if(queryCount == 0)
-                {
-                    String query = "UPDATE PERSON set USERNAME = 'admin' where ID = "+usernameToChange;
-                    int modifiedRows = stmt.executeUpdate(query);
-                    if(modifiedRows > 0)
-                    {
-                        logCommands.exportToLog("Username update SUCCESSFUL");
-                    }
-                    else
-                    {
-                        logCommands.exportToLog("Username update FAILED");
-                    }
-                }
-                else if(queryCount == 1)
-                {
-                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE PERSON_ID = "+usernameToChange;
+                {                	
+                	String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE PERSON_ID = "+usernameToChange;
+                	//String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'YzKZIAnbQ5m+3llggrZvNtf5fg69yX7pAplfYg0Dngn/fESH93OktQ==' WHERE USERNAME = '" + chosenUn + "'";
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -108,6 +96,21 @@ public class SQLCommand
                     {
                         logCommands.exportToLog("Password update FAILED");
                     }
+                    
+                }
+                else if(queryCount == 1)
+                {
+                	String query = "UPDATE PERSON set USERNAME = 'admin' where ID = "+usernameToChange;
+                	//String query = "UPDATE PERSON set USERNAME = 'admin' where USERNAME = '" + chosenUn + "'";
+                    int modifiedRows = stmt.executeUpdate(query);
+                    if(modifiedRows > 0)
+                    {
+                        logCommands.exportToLog("Username update SUCCESSFUL");
+                    }
+                    else
+                    {
+                        logCommands.exportToLog("Username update FAILED");
+                    } 	                    
                 }
             }
             catch (SQLException e) 
@@ -117,6 +120,7 @@ public class SQLCommand
                 {
                     logCommands.exportToLog("Credential update FAILED");
                     logCommands.exportToLog("CURRENT OPERATION ENCOUNTERED A SQL ERROR - No changes were made to the Mirth username");
+                    logCommands.exportToLog("ERROR : " + e.toString());
                 }
                 else
                 {
@@ -144,23 +148,12 @@ public class SQLCommand
         {
             try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
             {
-
+            	//Changed logic in 2.2.1 to update password first, then changing username
                 if(queryCount == 0)
                 {
-                    String query = "UPDATE PERSON set USERNAME = 'labdaq' where ID = "+targetUsername;
-                    int modifiedRows = stmt.executeUpdate(query);
-                    if(modifiedRows > 0)
-                    {
-                        logCommands.exportToLog("Username update SUCCESSFUL - 'labdaq' username");
-                    }
-                    else
-                    {
-                        logCommands.exportToLog("Username update FAILED");
-                    }
-                }
-                else if(queryCount == 1)
-                {
-                    String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = "+targetUsername;
+                	String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = "+targetUsername;
+                	//String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE USERNAME = '" + chosenUn + "'";
+                	System.out.println("Cred Query: " + query);
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -171,6 +164,21 @@ public class SQLCommand
                         logCommands.exportToLog("Password update FAILED");
                     }
                 }
+                else if(queryCount == 1)
+                {
+                	String query = "UPDATE PERSON set USERNAME = 'labdaq' where ID = "+targetUsername;
+                	//String query = "UPDATE PERSON set USERNAME = 'labdaq' where USERNAME = '" + chosenUn + "'";
+                    System.out.println("Username Query: " + query);
+                    int modifiedRows = stmt.executeUpdate(query);
+                    if(modifiedRows > 0)
+                    {
+                        logCommands.exportToLog("Username update SUCCESSFUL - 'labdaq' username");
+                    }
+                    else
+                    {
+                        logCommands.exportToLog("Username update FAILED");
+                    }                    
+                }
             }
             catch (SQLException e) 
             {
@@ -179,6 +187,7 @@ public class SQLCommand
                 {
                     logCommands.exportToLog("Credential update FAILED");
                     logCommands.exportToLog("CURRENT OPERATION ENCOUNTERED A SQL ERROR - No changes were made to the Mirth username");
+                    logCommands.exportToLog("ERROR : " + e.toString());
                 }
                 else
                 {

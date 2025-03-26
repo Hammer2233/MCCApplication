@@ -421,29 +421,42 @@ public class applicationWindow extends JFrame implements ActionListener
         {
             logCommands.exportToLog("Running Query for current Mirth username");
             String host = Main.returnHost();
-            SQLCommand.checkUN(host);
-            int howManyUsernames = SQLCommand.unArraySize();
-            
-            if(howManyUsernames > 1)
-            {
-            	String unList = "";
-            	for(int i=0;i<howManyUsernames;i++)
-            	{
-            		int currenti = i;
-            		String currentUn = SQLCommand.readUsernameArraylist(i);
-            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
-                    String formattedUN = "'" + currentUn + "'";
-                    unList = unList + formattedUN + "\n";
-            	}
-            	JOptionPane.showMessageDialog(labelVersion, "Usernames are: \n" + unList);
-            }
-            else
-            {
-            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames);
-            	logCommands.exportToLog("CURRENT USERNAME(s): " + currentUsername);
-                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
-            }
-            killConnection(host);
+            String serviceState = Main.checkMirthService();
+            if(serviceState == "STOPPED")
+        	{
+            	SQLCommand.checkUN(host);
+            	int howManyUsernames = SQLCommand.unArraySize();
+	            
+	            if(howManyUsernames > 1)
+	            {
+	            	String unList = "";
+	            	for(int i=0;i<howManyUsernames;i++)
+	            	{
+	            		int currenti = i;
+	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+	                    String formattedUN = "'" + currentUn + "'";
+	                    unList = unList + formattedUN + "\n";
+	            	}
+	            	JOptionPane.showMessageDialog(labelVersion, "Usernames are: \n" + unList);
+	            }
+	            else
+	            {
+	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
+	            }
+	            killConnection(host);
+        	}
+            else if(serviceState == "STARTED")
+        	{
+        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+        	}
+        	else
+        	{
+        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+        	}	            
         }
     }
 
@@ -908,7 +921,7 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	else if(chosenTheme == 2)
     	{
-    		//light theme
+    		//light theme    		  		
     		logTextArea.setBackground(new java.awt.Color(255, 228, 201));
     		logTextArea.setForeground(Color.BLACK);
     		cmdPWLabel.setForeground(Color.BLACK);
