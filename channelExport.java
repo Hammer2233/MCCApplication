@@ -1,7 +1,5 @@
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,17 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Scanner;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 public class channelExport
 {
@@ -435,14 +422,27 @@ public class channelExport
           {
             for (int h=0; h<currentChannelXML.size(); h++)
             {
-             channelExportFinal.print(currentChannelXML.get(h)+"\n");
-             if(currentChannelXML.get(h).toString().contains("</metadata>") && includeCTLs == true)
-             {
-              for(int b=0;b<allCTLArray.size();b++)
-              {
-                channelExportFinal.print(allCTLArray.get(b));
-              }
-             }
+            	//section below was added in 2.2.1 to filter out certain characters
+          	    //characters found so far: '…'
+            	String[] badCharacters = {"…"};
+            	String[] goodReplacements = {"..."};
+            	for(int bad=0;bad<badCharacters.length;bad++)
+            	{
+            		if(currentChannelXML.get(h).toString().contains(badCharacters[bad]))
+                	{
+                		String replaceBadCharacter = currentChannelXML.get(h).toString().replace(badCharacters[bad], goodReplacements[bad]);
+                		currentChannelXML.set(h, replaceBadCharacter);
+                	}
+            	}            	
+            		
+	            channelExportFinal.print(currentChannelXML.get(h)+"\n");
+	            if(currentChannelXML.get(h).toString().contains("</metadata>") && includeCTLs == true)
+	            {
+	              for(int b=0;b<allCTLArray.size();b++)
+	              {            	  
+	            	  channelExportFinal.print(allCTLArray.get(b));
+	              }
+	            }
             }
             channelExportFinal.close();
           }

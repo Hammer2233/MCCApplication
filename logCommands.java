@@ -36,7 +36,7 @@ public class logCommands
         SimpleDateFormat dateFormat;
         Date currentDate = new Date();
 
-        dateFormat = new SimpleDateFormat("yyyy-MM-dd|HH:mm|");
+        dateFormat = new SimpleDateFormat("yyyy-MM-dd|HH:mm:ss|");
 
         return dateFormat.format(currentDate);
     }
