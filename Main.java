@@ -1,11 +1,17 @@
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.io.IOException;
 
 public class Main 
@@ -257,6 +263,91 @@ public class Main
           }
       }
       return directoryToBeDeleted.delete();
+    }
+    
+    public static String repairDatabaseLog(String path)
+    {
+    	ArrayList logFiles = new ArrayList();
+    	logFiles.clear();
+    	File dir = new File(path);
+    	
+    	//Copies out names of each file
+    	File[] logFileDirectory = dir.listFiles();
+        String currentLogFile = "";
+        for(int b=0;b<logFileDirectory.length;b++)
+        {
+        	logFiles.add(logFileDirectory[b].getName());
+        }
+        
+        //renames the log folder
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss-SSS");
+        Date currentDate = new Date();
+        String newlogFolder = path + "_BACKUP_" + dateFormat.format(currentDate);
+        
+        File oldDir = new File(path);
+        File newDir = new File(newlogFolder);
+        boolean wasRenamed = false;
+        try 
+        {
+        	Files.move(dir.toPath(), newDir.toPath(), new java.nio.file.CopyOption[0]);
+        	logCommands.exportToLog("Renamed log folder to: '" + newlogFolder + "'");
+        	wasRenamed = true;
+        } 
+        catch (IOException ex) 
+        {
+        	logCommands.exportToLog("Failed to rename log folder. Error: " + ex.toString());
+        	if(ex.toString().contains("AccessDeniedException"))
+        	{
+        		logCommands.exportToLog("'AccessDeniedException' is often thrown with permission errors. Please run MCC.jar via the batch file and try again");
+        	}
+        }
+        
+        if(wasRenamed == true)
+        {
+        	System.out.println("BEGINNING COPY SEQUENCE");
+        	//recreates the log folder
+            dir.mkdirs();
+            
+//            File file = new File("");
+//            try 
+//            {
+//            	String[] manualLogFiles = { "log.ctrl", "log1.dat", "logmirror.ctrl", "README_DO_NOT_TOUCH_FILES.txt" };
+//            	for (String logFile : manualLogFiles) 
+//            	{
+//            		file = new File(newlogFolder + "\\log\\" + logFile);
+//            		Files.copy(path.getClass().getResourceAsStream("/log/" + logFile), file.getAbsoluteFile().toPath(), new java.nio.file.CopyOption[0]);
+//            	} 
+//            } 
+//            catch (IOException ex) 
+//            {
+//              System.out.println("ERROR: " + ex);
+//            }
+        	
+            
+            //copies all files in the backup log folder to the new folder
+            for(int i=0;i<logFiles.size();i++)
+            {
+            	System.out.println("Log File: " + logFiles.get(i));
+            	File source = new File(newlogFolder+"\\"+logFiles.get(i));
+            	File destination = new File(path+"\\"+logFiles.get(i));
+            	
+            	System.out.println("SOURCE: " + source);
+            	System.out.println("DESTINATION: " + destination);
+            	
+            	try
+            	{
+            		Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            		logCommands.exportToLog("FILE- '" + logFiles.get(i) + "' COPIED TO '" + destination + "'");
+            	} 
+            	catch (IOException e) 
+            	{
+            		logCommands.exportToLog("ERROR: UNABLE TO COPY '" + logFiles.get(i) + "'");
+            	    e.printStackTrace();
+            	}            	
+            }
+        }       
+    	
+    	return "repair ran";
     }
 
 }

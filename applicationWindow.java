@@ -53,6 +53,7 @@ public class applicationWindow extends JFrame implements ActionListener
     
     //Jpanels
     private static JPanel topButtonPanel;
+    private static JPanel middleButtonPanel;
     private static JPanel imagePanel;
     private static JPanel bottomMidButtonsPanel;
     private static JPanel westPanel;
@@ -67,6 +68,7 @@ public class applicationWindow extends JFrame implements ActionListener
     private static JButton exportChanInfo;
     private static JButton exportMirthConfigInfo;
     private static JButton mccInfoButton;
+    private static JButton moreFunctions;
     private JButton exitApplication;
     private static JPasswordField commandPWSpace;
     private JButton runCommand;
@@ -96,10 +98,11 @@ public class applicationWindow extends JFrame implements ActionListener
     private void guiBuilder()
     {
         setLayout(new BorderLayout());
+        this.labelVersion = new JLabel();
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -v2.2.1");
+        setTitle("MCC -2.2.2");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -149,6 +152,18 @@ public class applicationWindow extends JFrame implements ActionListener
         topButtonPanel.add(exportMirthConfigInfo, topGBC);
 
         westPanel.add(topButtonPanel);
+        
+        //gridbag setup for bottom buttons        
+        GridBagLayout middleButtonGridbag = new GridBagLayout();
+        middleButtonPanel = new JPanel();
+        middleButtonPanel.setLayout(middleButtonGridbag);
+        middleButtonPanel.setBackground(new java.awt.Color(214, 216, 233));
+        GridBagConstraints midGBC = new GridBagConstraints();
+
+        midGBC.fill = GridBagConstraints.BOTH;
+        midGBC.weightx = 1.0;
+        midGBC.weighty = 1.0;
+        midGBC.insets = new Insets(2, 2, 2, 2);
 
         checkUsernameButton = new JButton("CHECK UN");
         checkUsernameButton.addActionListener(new checkUsername());
@@ -162,17 +177,33 @@ public class applicationWindow extends JFrame implements ActionListener
         changeUNandPW.setBackground(new java.awt.Color(238, 252, 255));
         westPanel.add(changeUNandPW);
 
+        midGBC.gridx = 0;
+        midGBC.gridy = 0;
+        midGBC.gridwidth = 1; 
+        midGBC.gridheight = 1;
         changeBackupPath = new JButton("CHANGE BACKUP PATH");
         changeBackupPath.addActionListener(new changeBackupDir());
         changeBackupPath.setForeground(new java.awt.Color(140, 93, 6));
         changeBackupPath.setBackground(new java.awt.Color(252, 233, 204));
-        westPanel.add(changeBackupPath);
+        middleButtonPanel.add(changeBackupPath, midGBC);
 
+        midGBC.gridx = 0;
+        midGBC.gridy = 1;
         changeMirthDirPath = new JButton("CHANGE MIRTH PATH");
         changeMirthDirPath.addActionListener(new changeMirthDBDir());
         changeMirthDirPath.setForeground(new java.awt.Color(140, 93, 6));
         changeMirthDirPath.setBackground(new java.awt.Color(252, 233, 204));
-        westPanel.add(changeMirthDirPath);
+        middleButtonPanel.add(changeMirthDirPath, midGBC);
+        
+        midGBC.gridx = 0;
+        midGBC.gridy = 2;
+        moreFunctions = new JButton("[MORE FUNCTIONS]");
+        moreFunctions.addActionListener(new moreActionsCall());
+        moreFunctions.setForeground(new java.awt.Color(140, 93, 6));
+        moreFunctions.setBackground(new java.awt.Color(252, 233, 204));
+        middleButtonPanel.add(moreFunctions, midGBC);
+        
+        westPanel.add(middleButtonPanel);
         
         //JPanel for image
         imagePanel = new JPanel();
@@ -255,11 +286,11 @@ public class applicationWindow extends JFrame implements ActionListener
 
         logTextScroll = new JScrollPane(logTextArea);
         logTextScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        logTextScroll.setPreferredSize(new Dimension(820,320));
+        logTextScroll.setPreferredSize(new Dimension(820,360));
         
         centerPanel.setVisible(true);
         centerPanel.add(logTextScroll);
-        centerPanel.setPreferredSize(new Dimension(830, 335));
+        centerPanel.setPreferredSize(new Dimension(830, 370));
         add(centerPanel, BorderLayout.CENTER);
         
         //sets theme to anything other than the OG
@@ -622,7 +653,7 @@ public class applicationWindow extends JFrame implements ActionListener
         commandPWSpace.setText("");
 
         //events for each possible password/command
-        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme", "enablebackup"};
+        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme", "enablebackup", "tablesize"};
         for(int i=0;i<validCommands.length;i++)
         {
             if(captured.toLowerCase().equals(validCommands[i]) && i==0 && toggleEnabled == false)
@@ -752,6 +783,52 @@ public class applicationWindow extends JFrame implements ActionListener
                 }
                 System.out.println("autoBackupPath: " + autoBackupPath);
             }
+            if(captured.toLowerCase().equals(validCommands[i]) && i==5)
+            {            	
+            	String host = "";
+            	Object[] options = { "Mirth-Derby", "Postgres"};
+                int databaseChoice = JOptionPane.showOptionDialog(labelVersion, "Select Database Type:", "DATABASE SELECTION", 0, 2, null, options, options[1]);
+                if(databaseChoice < 0)
+                {
+                	logCommands.exportToLog("NO DATABASE SELECTED. Channel size query cancelled");
+                }
+                else if(databaseChoice == 0)
+                {
+                	logCommands.exportToLog("DATABASE CHOSEN: Mirth-Derby");
+                	host = Main.returnHost();
+                }
+                else if(databaseChoice == 1)
+                {
+                	logCommands.exportToLog("DATABASE CHOSEN: Postgres");
+                	host = SQLCommand.returnDBPathFromConfig();
+                }
+                
+                if(databaseChoice >=0)
+                {
+                	logCommands.exportToLog("RUNNING TABLE INFORMATION QUERY");
+                	SQLCommand.queryTableSpace(host);
+                		
+                	String outPutDisplay = "CHANNEL_NAME               TOTAL_BYTES          TABLE_NAME\n";
+                	int queriedTableNum = SQLCommand.channelSizeArraySize();
+               		for(int o=0; o<queriedTableNum;o++)
+               		{
+               			outPutDisplay = outPutDisplay + SQLCommand.returnQueryRow(o) + "\n";
+               		}
+               		JTextArea textArea = new JTextArea(outPutDisplay);
+                    textArea.setEditable(false);
+                    textArea.setLineWrap(true);
+                    textArea.setWrapStyleWord(true);
+
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    scrollPane.setPreferredSize(new Dimension(600, 200));
+
+                    if(queriedTableNum >0)
+                    {
+                    	logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
+                    	JOptionPane.showMessageDialog(null, scrollPane, "Channel Size", JOptionPane.PLAIN_MESSAGE);
+                    }                    
+                }            	
+            }
         }
 
         return "Enter Was Pressed";
@@ -782,6 +859,7 @@ public class applicationWindow extends JFrame implements ActionListener
     	changeMirthDirPath.setEnabled(toggleEnabled);
     	exportChanInfo.setEnabled(toggleEnabled);
     	exportMirthConfigInfo.setEnabled(toggleEnabled);
+    	moreFunctions.setEnabled(toggleEnabled);
     	return "disabled";
     }
     
@@ -860,6 +938,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(214, 216, 233));
+    		middleButtonPanel.setBackground(new java.awt.Color(214, 216, 233));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(214, 216, 233));
     		bottomButtonPanel.setBackground(new java.awt.Color(214, 216, 233));
     		westPanel.setBackground(new java.awt.Color(214, 216, 233));
@@ -884,6 +963,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(new java.awt.Color(140, 93, 6));
     		changeMirthDirPath.setBackground(new java.awt.Color(252, 233, 204));
+    		
+    		moreFunctions.setForeground(new java.awt.Color(138, 9, 82));
+    		moreFunctions.setBackground(new java.awt.Color(255, 181, 223));
     	}
     	else if(chosenTheme == 1)
     	{
@@ -894,6 +976,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(64, 64, 64));
+    		middleButtonPanel.setBackground(new java.awt.Color(64, 64, 64));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(64, 64, 64));
     		bottomButtonPanel.setBackground(new java.awt.Color(64, 64, 64));
     		westPanel.setBackground(new java.awt.Color(64, 64, 64));
@@ -918,6 +1001,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(new java.awt.Color(187, 134, 252));
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(new java.awt.Color(255, 101, 0));
     	}
     	else if(chosenTheme == 2)
     	{
@@ -928,6 +1014,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(255, 247, 241));
+    		middleButtonPanel.setBackground(new java.awt.Color(255, 247, 241));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(255, 247, 241));
     		bottomButtonPanel.setBackground(new java.awt.Color(255, 247, 241));
     		westPanel.setBackground(new java.awt.Color(255, 247, 241));
@@ -952,6 +1039,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(new java.awt.Color(169, 181, 223));
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(new java.awt.Color(205, 250, 219));
     	}
     	else if(chosenTheme == 3)
     	{
@@ -963,6 +1053,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(152, 210, 192));
+    		middleButtonPanel.setBackground(new java.awt.Color(152, 210, 192));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(152, 210, 192));
     		bottomButtonPanel.setBackground(new java.awt.Color(152, 210, 192));
     		westPanel.setBackground(new java.awt.Color(152, 210, 192));
@@ -987,6 +1078,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(new java.awt.Color(102, 210, 206));
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(new java.awt.Color(255, 170, 239));
     	}
     	else if(chosenTheme == 4)
     	{
@@ -997,6 +1091,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(249, 237, 105));
+    		middleButtonPanel.setBackground(new java.awt.Color(249, 237, 105));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(249, 237, 105));
     		bottomButtonPanel.setBackground(new java.awt.Color(249, 237, 105));
     		westPanel.setBackground(new java.awt.Color(249, 237, 105));
@@ -1021,6 +1116,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(new java.awt.Color(243, 113, 153));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(125, 63, 212));
     	}
     	else if(chosenTheme == 5)
     	{
@@ -1031,6 +1129,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		//background portions
     		topButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
+    		middleButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
     		bottomMidButtonsPanel.setBackground(new java.awt.Color(0, 51, 102));
     		bottomButtonPanel.setBackground(new java.awt.Color(0, 51, 102));
     		westPanel.setBackground(new java.awt.Color(0, 51, 102));
@@ -1055,6 +1154,9 @@ public class applicationWindow extends JFrame implements ActionListener
 
     		changeMirthDirPath.setForeground(Color.BLACK);
     		changeMirthDirPath.setBackground(Color.WHITE);
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(Color.WHITE);
     	}
     	return "theme changed";
     }
@@ -1080,6 +1182,69 @@ public class applicationWindow extends JFrame implements ActionListener
         }
         logCommands.exportToLog("Database shut down successfully.");
         return "connection killed";
+    }
+    
+    private static class moreActionsCall implements ActionListener
+    {
+    	@Override
+        public void actionPerformed(ActionEvent e)
+        {
+    		String serviceState = Main.checkMirthService();
+    		
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW" };
+            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "Select action:\n===========", "MORE FEATURES", 0, 2, null, options, options[1]);
+            if (additionalFeatureOption == 0)
+            {
+            	Object[] secondOptions = { "CONTINUE", "CANCEL" };
+                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "This command will:\n1. Rename the current 'log' folder in the database\n2. Create a new 'log' folder\n3. Copy all files from the old 'log' folder to the new one\n\nNOTE:\n-Ensure you have ran MCC.jar as admin via the batch file\n-Run only if backups are not generating", "REPAIR DATABASE?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (repairChoice < 0 || repairChoice == 1)
+                {
+                	logCommands.exportToLog("REPAIR CANCELLED. No action was taken");
+                }
+                else if (repairChoice == 0)
+                {
+                	if(serviceState == "STOPPED")
+                	{
+                		logCommands.exportToLog("Repair confirmed. Running...");
+                    	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
+                    	System.out.println("DB log To Repair: " + logPath);
+                    	
+                    	Main.repairDatabaseLog(logPath);                    	
+                	}
+                    else if(serviceState == "STARTED")
+                	{
+                		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                	}
+                	else
+                	{
+                		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                	}                	
+                }                	
+            }
+            else if(additionalFeatureOption == 1)
+            {
+            	logCommands.exportToLog("Running information query against Mirth database. Please wait...");
+            	String host = Main.returnHost();
+            	String dbInfoText = SQLCommand.databaseInformationCall(host);
+            	
+            	JTextArea mirthDBOutput = new JTextArea(dbInfoText);
+            	mirthDBOutput.setEditable(false);
+            	mirthDBOutput.setLineWrap(true);
+            	mirthDBOutput.setWrapStyleWord(true);
+
+                JScrollPane scrollPane = new JScrollPane(mirthDBOutput);
+                scrollPane.setPreferredSize(new Dimension(600, 250));
+                
+                logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
+            	JOptionPane.showMessageDialog(null, scrollPane, "Mirth-Derby Database Information:", JOptionPane.PLAIN_MESSAGE);
+            }
+            else if(additionalFeatureOption < 0)
+            {
+                System.out.println("CANCELLED");
+                logCommands.exportToLog("No additional function chosen");
+            }               		
+        }
     }
     
 }

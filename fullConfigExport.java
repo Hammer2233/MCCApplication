@@ -663,7 +663,7 @@ public class fullConfigExport
         {
             e.printStackTrace();
         }
-        return "version found";
+        return versionInfo;
     }
 
     public static String exportAlerts(String host) throws FileNotFoundException, SQLException
@@ -671,49 +671,49 @@ public class fullConfigExport
         //Exports and edits the channelMetadata
       try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement()) 
       {
-        String query = "SELECT * FROM ALERT";
-        ResultSet rs = stmt.executeQuery(query);
-        ResultSetMetaData RSMD = rs.getMetaData();
-        int columns = RSMD.getColumnCount();
+    	  String query = "SELECT * FROM ALERT";
+    	  ResultSet rs = stmt.executeQuery(query);
+    	  ResultSetMetaData RSMD = rs.getMetaData();
+    	  int columns = RSMD.getColumnCount();
 
-        File configFilesDir = new File(backupFolderPath+"fullMirthExport\\Alerts");
-        configFilesDir.mkdirs();
+    	  File configFilesDir = new File(backupFolderPath+"fullMirthExport\\Alerts");
+    	  configFilesDir.mkdirs();
 
-        try 
-        {
-        while (rs.next()) 
-        {
-            String fileName = rs.getString(2);
-            if (columns == 2 || fileName.length() > 100) 
-            {
-            int pos1 = fileName.indexOf("<name>") + 6;
-            int pos2 = fileName.indexOf("</name>");
-            fileName = fileName.substring(pos1, pos2);
-            }
-            fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
-                
-            //CHANGE THIS BELOW
-            //THIS COLUMN INDEX chooses what data to convert to XML
-            String XMLdata = rs.getString(3);
-
-            //exports all CONFIGURATION files to the specified directory
-            try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"fullMirthExport\\Alerts\\" + fileName)) 
-            {
-                XMLout.println(XMLdata);
-                XMLout.close();
-            } 
-            catch (FileNotFoundException fileExcept2) 
-            {
-                System.out.println("First channel export");
-                System.out.println("I DIDN'T FIND THE FILE");
-            }
-        }
-        }
-        catch (SQLException sqlExcept) 
-        {
-            System.out.println("FAILED MISERABLY");
-            System.out.println(sqlExcept);
-        }
+	        try 
+	        {
+		        while (rs.next()) 
+		        {
+		            String fileName = rs.getString(2);
+		            if (columns == 2 || fileName.length() > 100) 
+		            {
+		            int pos1 = fileName.indexOf("<name>") + 6;
+		            int pos2 = fileName.indexOf("</name>");
+		            fileName = fileName.substring(pos1, pos2);
+		            }
+		            fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
+		                
+		            //CHANGE THIS BELOW
+		            //THIS COLUMN INDEX chooses what data to convert to XML
+		            String XMLdata = rs.getString(3);
+		
+		            //exports all CONFIGURATION files to the specified directory
+		            try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"fullMirthExport\\Alerts\\" + fileName)) 
+		            {
+		                XMLout.println(XMLdata);
+		                XMLout.close();
+		            } 
+		            catch (FileNotFoundException fileExcept2) 
+		            {
+		                System.out.println("First channel export");
+		                System.out.println("I DIDN'T FIND THE FILE");
+		            }
+		        }
+	        }
+	        catch (SQLException sqlExcept) 
+	        {
+	            System.out.println("FAILED MISERABLY");
+	            System.out.println(sqlExcept);
+	        }
         }
 
         
