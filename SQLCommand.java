@@ -1,8 +1,11 @@
+package main;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -26,6 +29,9 @@ public class SQLCommand
     private static ArrayList channelIDList = new ArrayList();
     private static ArrayList channelStatusList = new ArrayList();
     private static ArrayList channelNameList = new ArrayList();
+    
+    private static ArrayList channelName = new ArrayList();
+    private static ArrayList channelXML = new ArrayList();
 
     public static String checkUN(String host)
     {
@@ -53,6 +59,7 @@ public class SQLCommand
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
             }
+            conn.close();
         }
         catch (Exception e) 
         {
@@ -452,7 +459,7 @@ public class SQLCommand
     	String dbInformationText = "Mirth Database Version: ";
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())    	
         {
-    		String[] commands = { "SELECT COUNT(*) AS TotalRows FROM CHANNEL", "SELECT * FROM CHANNEL ORDER BY NAME" };
+    		String[] commands = { "SELECT COUNT(*) AS TotalRows FROM CHANNEL", "SELECT NAME FROM CHANNEL ORDER BY NAME" };
     		String mirthVersion = fullConfigExport.getMirthVersion(host);
     		mirthVersion.replace("\"", "");
     		dbInformationText = dbInformationText + mirthVersion + "\nMirth DB Path: " + host.replace("jdbc:derby:", "").replace(";", "")+"\n";
@@ -505,7 +512,7 @@ public class SQLCommand
                     		}
                     		else
                     		{
-                    			String channelName = rs.getString(2);
+                    			String channelName = rs.getString(1);
                     			if(serviceCheck == "STOPPED")
                     			{
                     				//adds the information outside of this loop
@@ -676,5 +683,65 @@ public class SQLCommand
             e.printStackTrace();
         }
     	return "Arrays Built";
+    }
+    
+    public static String liteChannelExport(String host)
+    {
+    	channelName.clear();
+        channelXML.clear();
+        backupFolderPath = Main.getBackupFolder();
+        System.out.println("backupFolderPath: " + backupFolderPath);
+        try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+            String query = "SELECT NAME, CHANNEL FROM CHANNEL";
+            ResultSet rs = stmt.executeQuery(query);
+
+            try
+            {
+                while (rs.next()) 
+                {                 
+                    //column containing Username
+                	channelName.add(rs.getString(1));
+                	channelXML.add(rs.getString(2));             
+                }
+            } 
+            catch (SQLException sqlExcept) 
+            {
+                System.out.println("FAILED MISERABLY");
+                System.out.println(sqlExcept);
+            }
+            conn.close();
+        }
+        catch (Exception e) 
+        {
+            e.printStackTrace();
+        }
+        
+        File channelFileDir = new File(backupFolderPath+"channelBackup\\");
+        channelFileDir.mkdirs();
+    	for(int m=0;m<channelName.size();m++)
+    	{
+    		File currentCTLFile = new File(backupFolderPath+"channelBackup\\"+channelName.get(m)+".xml");
+    		try 
+    		{
+				currentCTLFile.createNewFile();
+			} 
+    		catch (IOException e) 
+    		{
+				e.printStackTrace();
+			}
+    		try (PrintWriter channelOut = new PrintWriter(currentCTLFile)) 
+            {
+    			channelOut.println(channelXML.get(m));
+    			channelOut.close();
+            } 
+            catch (FileNotFoundException fileExcept2) 
+            {
+                System.out.println("Second channel export");
+                System.out.println("I DIDN'T FIND THE FILE");
+            }
+    	}
+        
+        return "lite export complete";
     }
 }
