@@ -1,7 +1,10 @@
 package main;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,6 +30,14 @@ public class channelExport
     private static ArrayList codeTemplate_ID = new ArrayList();
     private static ArrayList codeTemplate_XML = new ArrayList();
     private static ArrayList allCTLArray = new ArrayList();
+    
+    //Arraylist and boolean to determine if an SFTP restart channel should be implemented
+    private static String sftpChannelNames = "";
+    private static ArrayList sftpConnectedChannels = new ArrayList();
+    private static ArrayList sftpRestartSplit = new ArrayList();
+    private static boolean isSFTPChannelNeeded = false;
+    private static boolean sftpGenChoice = true;
+    private static boolean generateSFTPTag = false;
 
     //boolean to determine if code templates are included
     private static boolean includeCTLs;
@@ -65,6 +76,7 @@ public class channelExport
     public static String exportChannels(String host)
     {
     	//clears the channels folder before next write
+    	backupFolderPath = Main.getBackupFolder();
     	clearChannelFolder();
     	
     	//clears arraylists
@@ -77,8 +89,10 @@ public class channelExport
     	codeTemplate_ID.clear();
     	codeTemplate_XML.clear();
     	allCTLArray.clear();
-
-    	backupFolderPath = Main.getBackupFolder();
+    	sftpConnectedChannels.clear();
+    	sftpRestartSplit.clear();
+    	sftpChannelNames = "";
+    	
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
 		{
 		    String query = "SELECT * FROM CHANNEL";
@@ -186,8 +200,16 @@ public class channelExport
          * 4. Adds CTLs if necessary
          * 5. Exports the channel XML
          */
+        boolean sftpCheck = true;
         for(int cm=0;cm<channelNames.size();cm++)
         {        
+        	//new in 2.2.3 - Evaluating if an SFTP restart channel is needed
+        	if(cm == channelNames.size() -1 && sftpCheck == true)
+        	{                
+                sftpChannelBuilder(host);
+                sftpCheck = false;
+        	}
+        	
         	File currentChannelFile = new File(backupFolderPath+"channelBackup\\" + channelNames.get(cm)+".xml");
             try 
     		{
@@ -236,24 +258,45 @@ public class channelExport
             	else
             	{
             		channelXMLOutput += line + "\n";
+            		if(line.contains("<scheme>"))
+            		{
+            			String schemeType = line.replace("<scheme>", "").replace("</scheme>", "").toUpperCase().trim();
+            			if(schemeType.contains("FTP"))
+            			{
+            				System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
+            				sftpConnectedChannels.add(channelNames.get(cm));
+            				isSFTPChannelNeeded = true;
+            			}
+            		}
             	}
             }
             
             if(includeCTLs == true)
             {
-            	channelXMLOutput += "<codeTemplateLibraries>\n";
-            	
-            	for(int hi=0;hi<codeTemplateLibrary_XML.size();hi++)
-            	{
-            		channelXMLOutput += codeTemplateLibrary_XML.get(hi);
-            	}
-            	
             	//channelXMLOutput += "</codeTemplateLibraries>\n";
-            	channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
+            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	{
+            		channelXMLOutput += "<codeTemplateLibraries>\n";
+                	
+                	for(int hi=0;hi<codeTemplateLibrary_XML.size();hi++)
+                	{
+                		channelXMLOutput += codeTemplateLibrary_XML.get(hi);
+                	}
+            		channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
+            	}
+            	else
+            	{
+            		//skip CTLs for the SFTP restart channel if the channel has not been imported into the database
+            	}            	
             }
             else
             {
-            	channelXMLOutput += "</exportData>\n";
+            	//below checks if this is a new SFTP channel generation. If so, it will skip adding the exportdata tag
+            	//if it is not a new generation (aka, SFTP restart was already in the DB), then it will add the tag
+            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	{
+            		channelXMLOutput += "</exportData>\n";
+            	}
             }
             channelXMLOutput += "</channel>";
             
@@ -272,6 +315,10 @@ public class channelExport
             rawChannelCLOB.set(cm, channelXMLOutput);
         }                       
         //END channelExport Appending        
+        
+//        //new in 2.2.3 - Evaluating if an SFTP restart channel is needed
+//        sftpChannelBuilder(host);
+        
         return "metaDataExported";
     }
 
@@ -434,15 +481,21 @@ public class channelExport
 
     public static String clearChannelFolder()
     {
-    	File channelDirFileList = new File(backupFolderPath+"channelBackup\\");
-    	if(channelDirFileList.exists())
+    	//added in 2.2.3 to clear the CTL and Full folders as well
+    	String[] folderPaths = {"channelBackup\\", "channelCodeTemplatesBackup\\codeTemplateLibraries\\", "fullMirthExport\\", "channelCodeTemplatesBackup\\"};
+    	for(int clear=0;clear<folderPaths.length;clear++)
     	{
-    		String[] entries = channelDirFileList.list();
-    		for (String s : entries) 
-    		{
-    			File currentFile = new File(channelDirFileList.getPath(), s);
-    			currentFile.delete();
-    		}
+    		File channelDirFileList = new File(backupFolderPath+folderPaths[clear]);
+        	if(channelDirFileList.exists())
+        	{
+        		String[] entries = channelDirFileList.list();
+        		for (String s : entries) 
+        		{
+        			File currentFile = new File(channelDirFileList.getPath(), s);
+        			currentFile.delete();
+        		}
+        		channelDirFileList.delete();
+        	}
     	}
     	return "channel folder cleared";
     }
@@ -457,7 +510,7 @@ public class channelExport
     {
     	return rawChannelCLOB.get(place).toString();
     }
-    
+        
     public static int retrunCodeTemplateLibrarySize()
     {
     	return codeTemplateLibrary_XML.size();
@@ -466,5 +519,120 @@ public class channelExport
     public static String returnCurrCTL(int place)
     {
     	return codeTemplateLibrary_XML.get(place).toString();
+    }
+
+    public static String sftpChannelBuilder(String host)
+    {
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 10)
+    	{
+    		System.out.println("I am greater than/equal to Mirth version 3.10.0");
+    		if(!channelNames.contains("SFTP Restart Channel"))
+    		{
+    			if(isSFTPChannelNeeded == true && sftpGenChoice == true)
+    			{
+    				generateSFTPTag = true;
+	    			sftpChannelNames += "[";
+	    			for(int nn=0;nn<sftpConnectedChannels.size();nn++) 
+	    			{
+	    				if(sftpConnectedChannels.size() == 1)
+	    				{
+	    					sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "'";
+	    				}
+	    				else
+	    				{
+	    					if(nn == sftpConnectedChannels.size()-1)
+	    					{
+	    						sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "'";
+	    					}
+	    					else
+	    					{
+	    						sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "', ";	
+	    					}    					
+	    				}
+	    			}
+	    			sftpChannelNames += "]";
+	    			System.out.println("Replacement for XML File: " + sftpChannelNames);
+	    			
+	    			InputStream inputStream = channelExport.class.getResourceAsStream("/SFTP Restart Channel.xml");
+	    			if (inputStream != null) 
+	    			{
+	    			    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) 
+	    			    {
+	    			        String line;
+	    			        while ((line = reader.readLine()) != null) 
+	    			        {
+	    			        	sftpRestartSplit.add(line);
+	    			        }
+	    			    } 
+	    			    catch (IOException e) 
+	    			    {
+	    			        e.printStackTrace();
+	    			    }
+	    			} 
+	    			else 
+	    			{
+	    			    System.err.println("File not found in resources.");
+	    			}
+	    			
+	    			//compiles the full XML and swaps out description and the target channels
+	    			String fullSFTPwithReplacements = "";
+	    			for(int fun=0;fun<sftpRestartSplit.size();fun++) 
+	    			{
+	    				String currentLine = sftpRestartSplit.get(fun).toString();
+	    				if(currentLine.contains("[&apos;CHANNEL NAME GOES HERE&apos;]"))
+	    				{
+	    					fullSFTPwithReplacements += currentLine.replace("[&apos;CHANNEL NAME GOES HERE&apos;]", sftpChannelNames) + "\n";
+	    				}
+	    				else if(currentLine.contains("CHANGETHATDATE"))
+	    				{
+	    					fullSFTPwithReplacements += currentLine.replace("CHANGETHATDATE", logCommands.getDateTime()) + "\n";
+	    				}
+	    				else
+	    				{
+	    					fullSFTPwithReplacements += currentLine + "\n";
+	    				}
+	    			}
+	    			channelNames.add("SFTP Restart Channel");
+	    			rawChannelCLOB.add(fullSFTPwithReplacements);
+	    			channelIDs.add("07f073af-c1b5-43a1-be3b-6d211f08cabb");
+	    			channelMetadata.add("nullPlaceholder");
+    			}
+    			else
+    			{
+    				if(sftpGenChoice == false)
+    				{
+    					System.out.println("User chose to disable SFTP generation via MORE FUNCTIONS");
+    				}
+    				else
+    				{
+    					System.out.println("No SFTP connection type was found. No need to create the channel");
+    				}    				
+    			}
+    		}
+    		else
+    		{
+    			System.out.println("SFTP Restart Channel already exists in client's database");
+    		}		
+    	}
+    	else
+    	{
+    		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
+    	}
+    	
+    	return "SFTP Restart Channel Added";
+    }
+    
+    public static boolean setSFTPGeneration(boolean choice)
+    {
+    	sftpGenChoice = choice;
+    	return sftpGenChoice;
+    }
+    
+    public static boolean allowSFTPGeneration()
+    {
+    	return sftpGenChoice;
     }
 }

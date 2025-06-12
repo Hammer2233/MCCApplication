@@ -206,12 +206,22 @@ public class fullConfigExport
         masterMirthExport.add("</channels>");
 
         //adds channelTags to the master Array
+        //changed logic in 2.2.3 to properly close XML tag if no channelTags are detected (but the file is present)
         if(configurationFile_NAMES.contains("channelTags"))
         {
-        	masterMirthExport.add("<channelTags>");
         	int indexOfResult = configurationFile_NAMES.indexOf("channelTags");
-        	masterMirthExport.add(configuration_Data.get(indexOfResult).toString().replace("<set>", "").replace("</set>", ""));
-        	masterMirthExport.add("</channelTags>");
+        	String channelTagText = configuration_Data.get(indexOfResult).toString().replace("<set>", "").replace("</set>", "");
+        	if(channelTagText.trim().equals("<set/>"))
+        	{
+        		System.out.println("NO CHANNEL TAGS DETECTED");
+        		masterMirthExport.add("<channelTags/>");
+        	}
+        	else
+        	{
+        		masterMirthExport.add("<channelTags>");
+            	masterMirthExport.add(channelTagText);
+            	masterMirthExport.add("</channelTags>");
+        	}        	
         }
         else
         {
