@@ -1,3 +1,5 @@
+package main;
+
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 import java.awt.BorderLayout;
@@ -102,7 +104,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.2");
+        setTitle("MCC -2.2.3");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -346,8 +348,12 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	String serviceState = Main.checkMirthService();
     	String host = Main.returnHost();
-    	if(serviceState == "STOPPED")
+    	
+    	//added in 2.2.3
+    	boolean changedDirCheck = Main.changedDirTF();
+    	if(changedDirCheck == true)
     	{
+    		logCommands.exportToLog("Performing backup. NOTE: Please be patient as this may take up to 2 minutes to run");
     		Main.setBackupFolder();
             channelExport.isFullMirthExportCheck("NO");
             System.out.println("PERFORMING CHANNEL BACKUP");
@@ -367,14 +373,39 @@ public class applicationWindow extends JFrame implements ActionListener
             setLogWindow();
             Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
     	}
-    	else if(serviceState == "STARTED")
-    	{
-    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-    	}
     	else
     	{
-    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+    		if(serviceState == "STOPPED")
+        	{
+                logCommands.exportToLog("Performing backup. NOTE: Please be patient as this may take up to 2 minutes to run");
+        		Main.setBackupFolder();
+                channelExport.isFullMirthExportCheck("NO");
+                System.out.println("PERFORMING CHANNEL BACKUP");
+                //String host = Main.returnHost();
+                channelExport exportChannels = new channelExport();
+                channelExport.exportChannels(host);
+                channelExport exportMetadata = new channelExport();
+                try 
+                {
+                    channelExport.exportMetadata(host);
+                } 
+                catch (FileNotFoundException e1) 
+                {
+                    e1.printStackTrace();
+                }
+                logCommands.returnArchivedChannels(Main.getBackupFolder()+"\\channelBackup\\");
+                setLogWindow();
+                Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
+        	}
+        	else if(serviceState == "STARTED")
+        	{
+        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+        	}
+        	else
+        	{
+        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+        	}
     	}
     	killConnection(host);
         return "exported channels";
@@ -387,11 +418,15 @@ public class applicationWindow extends JFrame implements ActionListener
         {
         	String serviceState = Main.checkMirthService();
         	String host = Main.returnHost();
-        	if(serviceState == "STOPPED")
+        	
+        	//added in 2.2.3
+        	boolean changedDirCheck = Main.changedDirTF();
+        	if(changedDirCheck == true)
         	{
-                channelExport.clearChannelFolder();
+        		channelExport.clearChannelFolder();
                 Main.setBackupFolder();
                 logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
+                logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
                 channelExport.isFullMirthExportCheck("YES");
                 
                 //String host = Main.returnHost();
@@ -425,16 +460,59 @@ public class applicationWindow extends JFrame implements ActionListener
                 Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
                 logCommands.exportToLog("Full configuration exported to: " + Main.getBackupFolder() +"fullMirthExport");
         	}
-        	else if(serviceState == "STARTED")
-        	{
-        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-        	}
         	else
         	{
-        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-        	}
-        	killConnection(host);
+        		if(serviceState == "STOPPED")
+            	{
+                    channelExport.clearChannelFolder();
+                    Main.setBackupFolder();
+                    logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
+                    logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
+                    channelExport.isFullMirthExportCheck("YES");
+                    
+                    //String host = Main.returnHost();
+                    channelExport exportChannels = new channelExport();
+                    channelExport.exportChannels(host);
+                    channelExport exportMetadata = new channelExport();
+                    try 
+                    {
+                        channelExport.exportMetadata(host);
+                    } 
+                    catch (Exception e1) 
+                    {
+                    	System.out.println("UNABLE TO EXPORT CHANNEL METADATA");
+                        e1.printStackTrace();
+                    }
+                    channelExport.isFullMirthExportCheck("NO");
+                    logCommands.exportToLog("EXPORTED - Channels and Metadata");
+
+                    try 
+                    {
+                        fullConfigExport.exportChannelGroups(host);
+                    } 
+                    catch (SQLException e1) 
+                    {
+                        e1.printStackTrace();
+                    }
+                    //setLogWindow();
+                    catch (FileNotFoundException e1)
+                    {
+                        e1.printStackTrace();
+                    }
+                    Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
+                    logCommands.exportToLog("Full configuration exported to: " + Main.getBackupFolder() +"fullMirthExport");
+                    killConnection(host);
+            	}
+            	else if(serviceState == "STARTED")
+            	{
+            		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+            		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+            	}
+            	else
+            	{
+            		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+            	}
+        	}	
         }
     }
 
@@ -453,9 +531,12 @@ public class applicationWindow extends JFrame implements ActionListener
             logCommands.exportToLog("Running Query for current Mirth username");
             String host = Main.returnHost();
             String serviceState = Main.checkMirthService();
-            if(serviceState == "STOPPED")
+            
+            //added in 2.2.3
+        	boolean changedDirCheck = Main.changedDirTF();
+        	if(changedDirCheck == true)
         	{
-            	SQLCommand.checkUN(host);
+        		SQLCommand.checkUN(host);
             	int howManyUsernames = SQLCommand.unArraySize();
 	            
 	            if(howManyUsernames > 1)
@@ -479,15 +560,44 @@ public class applicationWindow extends JFrame implements ActionListener
 	            }
 	            killConnection(host);
         	}
-            else if(serviceState == "STARTED")
-        	{
-        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-        	}
         	else
         	{
-        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-        	}	            
+        		if(serviceState == "STOPPED")
+            	{
+                	SQLCommand.checkUN(host);
+                	int howManyUsernames = SQLCommand.unArraySize();
+    	            
+    	            if(howManyUsernames > 1)
+    	            {
+    	            	String unList = "";
+    	            	for(int i=0;i<howManyUsernames;i++)
+    	            	{
+    	            		int currenti = i;
+    	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+    	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+    	                    String formattedUN = "'" + currentUn + "'";
+    	                    unList = unList + formattedUN + "\n";
+    	            	}
+    	            	JOptionPane.showMessageDialog(labelVersion, "Usernames are: \n" + unList);
+    	            }
+    	            else
+    	            {
+    	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+    	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+    	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
+    	            }
+    	            killConnection(host);
+            	}
+                else if(serviceState == "STARTED")
+            	{
+            		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+            		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+            	}
+            	else
+            	{
+            		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+            	}
+        	}          
         }
     }
 
@@ -570,9 +680,12 @@ public class applicationWindow extends JFrame implements ActionListener
             Object[] options = { "CONTINUE", "CANCEL" };
             int changeMirthUN = JOptionPane.showOptionDialog(labelVersion, "Reset Mirth USERNAME and PASSWORD\nNOTES:\n -This will reset to 'admin' defaults\n -Program must be ran as admin via the batch file", "CHANGE MIRTH UN/PW", 0, 2, null, options, options[1]);
         	String serviceState = Main.checkMirthService();
-        	if(serviceState == "STOPPED")
+        	
+        	//added in 2.2.3
+        	boolean changedDirCheck = Main.changedDirTF();
+        	if(changedDirCheck == true)
         	{
-                if (changeMirthUN == 0)
+        		if (changeMirthUN == 0)
                 {
                 	SQLCommand.checkUN(host);
                 	int whichUsername = SQLCommand.unArraySize();
@@ -604,16 +717,52 @@ public class applicationWindow extends JFrame implements ActionListener
                     logCommands.exportToLog("Username and Password NOT changed");
                 }
         	}
-        	else if(serviceState == "STARTED")
-        	{
-        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-        	}
         	else
         	{
-        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+        		if(serviceState == "STOPPED")
+            	{
+                    if (changeMirthUN == 0)
+                    {
+                    	SQLCommand.checkUN(host);
+                    	int whichUsername = SQLCommand.unArraySize();
+                    	
+                    	if(whichUsername > 1)
+                    	{
+                    		ArrayList listOfUsernames = new ArrayList<Object>(SQLCommand.returnArraylist());
+                    		Object[] unOptions = listOfUsernames.toArray();
+                            int selectedUsername = JOptionPane.showOptionDialog(labelVersion, "Multiple Mirth usernames detected.\nPlease select the username to update:\n", "SELECT USERNAME TO CHANGE", 0, 2, null, unOptions, unOptions[1]);
+                            if(selectedUsername < 0)
+                            {
+                            	logCommands.exportToLog("Username and Password NOT changed");
+                            }
+                            else
+                            {
+                            	SQLCommand.resetUsernamePassword(host, selectedUsername+1);
+                            }
+                    	}
+                    	else
+                    	{
+                    		System.out.println("CHOSE TO CHANGE PW");
+                            SQLCommand.resetUsernamePassword(host, 1);
+                    	}
+                        killConnection(host);
+                    }
+                    else if(changeMirthUN == 1)
+                    {
+                        System.out.println("NO CHANGE TO PW");
+                        logCommands.exportToLog("Username and Password NOT changed");
+                    }
+            	}
+            	else if(serviceState == "STARTED")
+            	{
+            		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+            		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+            	}
+            	else
+            	{
+            		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+            	}
         	}
-
         }
     }
 
@@ -688,7 +837,10 @@ public class applicationWindow extends JFrame implements ActionListener
             	System.out.println("UPDATING UN and PW");
             	String serviceStatus = Main.checkMirthService();
             	String host = Main.returnHost();
-            	if(serviceStatus.equals("STOPPED"))
+            	
+            	//added in 2.2.3
+            	boolean changedDirCheck = Main.changedDirTF();
+            	if(changedDirCheck == true)
             	{
             		SQLCommand.checkUN(host);
                 	int whichUsername = SQLCommand.unArraySize();
@@ -713,14 +865,42 @@ public class applicationWindow extends JFrame implements ActionListener
                 	}            		
             		killConnection(host);
             	}
-            	else if(serviceStatus.equals("STARTED"))
-            	{
-            		logCommands.exportToLog("SERVICE STATUS: -" + serviceStatus+". ERROR- Stop the Mirth service before proceeding");
-            	}
             	else
             	{
-            		logCommands.exportToLog("SERVICE STATUS: -" + serviceStatus+". ERROR- check service status and try again");
-            	}
+            		if(serviceStatus.equals("STOPPED"))
+                	{
+                		SQLCommand.checkUN(host);
+                    	int whichUsername = SQLCommand.unArraySize();
+                    	
+                    	if(whichUsername > 1)
+                    	{
+                    		ArrayList listOfUsernames = new ArrayList<Object>(SQLCommand.returnArraylist());
+                    		Object[] unOptions = listOfUsernames.toArray();
+                            int selectedUsername = JOptionPane.showOptionDialog(labelVersion, "Multiple Mirth usernames detected.\nPlease select the username to update:\n", "SELECT USERNAME TO CHANGE", 0, 2, null, unOptions, unOptions[1]);
+                            if(selectedUsername < 0)
+                            {
+                            	logCommands.exportToLog("Username and Password NOT changed");
+                            }
+                            else
+                            {
+                            	SQLCommand.changeUNandPWCMD(host, selectedUsername+1);
+                            }
+                    	}
+                    	else
+                    	{
+                    		SQLCommand.changeUNandPWCMD(host, 1);
+                    	}            		
+                		killConnection(host);
+                	}
+                	else if(serviceStatus.equals("STARTED"))
+                	{
+                		logCommands.exportToLog("SERVICE STATUS: -" + serviceStatus+". ERROR- Stop the Mirth service before proceeding");
+                	}
+                	else
+                	{
+                		logCommands.exportToLog("SERVICE STATUS: -" + serviceStatus+". ERROR- check service status and try again");
+                	}
+            	}    
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
@@ -870,7 +1050,8 @@ public class applicationWindow extends JFrame implements ActionListener
 
         // Ensure backup directory exists
         File targetDirectory = new File(chosenPath + "\\-backupConfigSettings-");
-        if (!targetDirectory.exists()) {
+        if (!targetDirectory.exists()) 
+        {
             targetDirectory.mkdirs(); // Create directories if they don't exist
         }
 
@@ -1191,7 +1372,8 @@ public class applicationWindow extends JFrame implements ActionListener
         {
     		String serviceState = Main.checkMirthService();
     		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW" };
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF" };
+    		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
             int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "Select action:\n===========", "MORE FEATURES", 0, 2, null, options, options[1]);
             if (additionalFeatureOption == 0)
             {
@@ -1203,23 +1385,36 @@ public class applicationWindow extends JFrame implements ActionListener
                 }
                 else if (repairChoice == 0)
                 {
-                	if(serviceState == "STOPPED")
+                	//added in 2.2.3
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
                 	{
                 		logCommands.exportToLog("Repair confirmed. Running...");
                     	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
                     	System.out.println("DB log To Repair: " + logPath);
                     	
-                    	Main.repairDatabaseLog(logPath);                    	
-                	}
-                    else if(serviceState == "STARTED")
-                	{
-                		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-                		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	Main.repairDatabaseLog(logPath);     
                 	}
                 	else
                 	{
-                		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-                	}                	
+                		if(serviceState == "STOPPED")
+                    	{
+                    		logCommands.exportToLog("Repair confirmed. Running...");
+                        	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
+                        	System.out.println("DB log To Repair: " + logPath);
+                        	
+                        	Main.repairDatabaseLog(logPath);                    	
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	}           	
                 }                	
             }
             else if(additionalFeatureOption == 1)
@@ -1238,6 +1433,65 @@ public class applicationWindow extends JFrame implements ActionListener
                 
                 logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
             	JOptionPane.showMessageDialog(null, scrollPane, "Mirth-Derby Database Information:", JOptionPane.PLAIN_MESSAGE);
+            }
+            else if(additionalFeatureOption == 2)
+            {
+            	Object[] secondOptions = { "ON", "OFF" };
+                int sftpChoice = JOptionPane.showOptionDialog(labelVersion, "By default, if an SFTP connected channel is detected\nthe SFTP Restart channel will be added to\nthe full config and channel exports.\n\nTurn SFTP Restart channel generation On/Off?", "TOGGLE SFTP CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (sftpChoice == 1)
+                {
+                	logCommands.exportToLog("SFTP Restart Channel generation DISABLED");
+                	channelExport.setSFTPGeneration(false);
+                }
+                else if (sftpChoice == 0)
+                {
+                	logCommands.exportToLog("SFTP Restart Channel generation ENABLED");
+                	channelExport.setSFTPGeneration(true);
+                }
+                else
+                {
+                	logCommands.exportToLog("NO DECISION MADE FOR SFTP RESTART CHANNEL GENERATION");
+                	String genAction = "";
+                	if(channelExport.allowSFTPGeneration() == true)
+                	{
+                		genAction = "ENABLED";
+                	}
+                	else
+                	{
+                		genAction = "DISABLED";
+                	}
+                	logCommands.exportToLog("Generation action currently set to: " + genAction);
+                }
+            }
+            else if(additionalFeatureOption == 3)
+            {
+            	Object[] secondOptions = { "CONTINUE", "CANCEL" };
+                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "A Lite Channel Export entails:\n1. The Mirth Service does not have to be stopped\n2. The Channel Export will not have any metadata (pruning settings, enable/disabled, etc.)\n3. Exports Code Template libraries", "PERFORM LITE CHANNEL EXPORT?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (repairChoice < 0 || repairChoice == 1)
+                {
+                	logCommands.exportToLog("EXPORT CANCELLED. No action was taken");
+                }
+                else if (repairChoice == 0)
+                {
+                	Main.setBackupFolder();
+                	String host = Main.returnHost();
+                	SQLCommand.liteChannelExport(host);                	
+                	
+                	//exports code templates
+                	try 
+                	{
+						channelExport.exportCodeTemplates(host);
+					} 
+                	catch (FileNotFoundException e1) 
+                	{
+						e1.printStackTrace();
+					}
+                	
+                	logCommands.exportToLog("Lite Channel Backup Complete");
+                	logCommands.exportToLog("Files exported to " + Main.getBackupFolder()+"\\channelBackup\\");
+                    setLogWindow();
+                	Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
+                }
             }
             else if(additionalFeatureOption < 0)
             {

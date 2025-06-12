@@ -1,5 +1,10 @@
+package main;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,24 +17,27 @@ import java.util.Scanner;
 
 public class channelExport
 {
-    private static ArrayList extractedCMDArray = new ArrayList();
-    //private static ArrayList extractedCMD = new ArrayList<>();
-
-    //Arrays to track channel names, metadata associated with the channels, reordered CMD, all channelXML exports, and channel ids
-    private static ArrayList channelNames = new ArrayList<>();
-    private static ArrayList channelIDs = new ArrayList<>();
-    private static ArrayList extractedCMDArrayREORDERED = new ArrayList<>();
-    private static ArrayList masterChannelXML = new ArrayList<>();
-
     //Arrays to track code template library names, library XML
-    //NOTE: This only needs to be ran once as all channels utilize all code template libraries
-    private static ArrayList codeTemplateNames = new ArrayList<>();
-    private static ArrayList codeTemplateLibraryNames = new ArrayList<>();
-    private static ArrayList codeTemplateIDs = new ArrayList<>();
-    private static ArrayList completeCodeTemplates = new ArrayList<>();
-    private static ArrayList currentCodeTemplateLib = new ArrayList<>();
-    private static ArrayList curExtractedCT = new ArrayList<>();
-    private static ArrayList allCTLArray = new ArrayList<>();
+    //NOTE: This only needs to be ran once as all channels utilize all code template libraries    
+    
+	//ArrayList changed in 2.2.3 Update
+    private static ArrayList channelIDs = new ArrayList<>();
+    private static ArrayList channelNames = new ArrayList<>();
+    private static ArrayList rawChannelCLOB = new ArrayList();
+    private static ArrayList channelMetadata = new ArrayList();
+    private static ArrayList codeTemplateLibrary_NAME = new ArrayList();
+    private static ArrayList codeTemplateLibrary_XML = new ArrayList();
+    private static ArrayList codeTemplate_ID = new ArrayList();
+    private static ArrayList codeTemplate_XML = new ArrayList();
+    private static ArrayList allCTLArray = new ArrayList();
+    
+    //Arraylist and boolean to determine if an SFTP restart channel should be implemented
+    private static String sftpChannelNames = "";
+    private static ArrayList sftpConnectedChannels = new ArrayList();
+    private static ArrayList sftpRestartSplit = new ArrayList();
+    private static boolean isSFTPChannelNeeded = false;
+    private static boolean sftpGenChoice = true;
+    private static boolean generateSFTPTag = false;
 
     //boolean to determine if code templates are included
     private static boolean includeCTLs;
@@ -39,39 +47,53 @@ public class channelExport
 
     public static boolean includeCodeTemplates(String yesNo)
     {
-      if(yesNo == "YES")
-      {
-        includeCTLs = true;
-        return includeCTLs;
-      }
-      else
-      {
-        includeCTLs = false;
-        return includeCTLs;
-      }
+    	if(yesNo == "YES")
+    	{
+    		includeCTLs = true;
+    		return includeCTLs;
+    	}
+    	else
+    	{
+    		includeCTLs = false;
+    		return includeCTLs;
+    	}
     }
 
     public static boolean isFullMirthExportCheck(String yesNo)
     {
-      if(yesNo == "YES")
-      {
-        isFullMirthExport = true;
-        return isFullMirthExport;
-      }
-      else
-      {
-        isFullMirthExport = false;
-        return false;
-      }
+    	if(yesNo == "YES")
+    	{
+    		isFullMirthExport = true;
+    		return isFullMirthExport;
+    	}
+    	else
+    	{
+    		isFullMirthExport = false;
+    		return false;
+    	}
     }
 
     public static String exportChannels(String host)
     {
-      //clears the channels folder before next write
-      clearChannelFolder();
-
-      backupFolderPath = Main.getBackupFolder();
-		try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+    	//clears the channels folder before next write
+    	backupFolderPath = Main.getBackupFolder();
+    	clearChannelFolder();
+    	
+    	//clears arraylists
+    	channelIDs.clear();
+    	channelNames.clear();
+    	rawChannelCLOB.clear();
+    	channelMetadata.clear();
+    	codeTemplateLibrary_NAME.clear();
+    	codeTemplateLibrary_XML.clear();
+    	codeTemplate_ID.clear();
+    	codeTemplate_XML.clear();
+    	allCTLArray.clear();
+    	sftpConnectedChannels.clear();
+    	sftpRestartSplit.clear();
+    	sftpChannelNames = "";
+    	
+    	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
 		{
 		    String query = "SELECT * FROM CHANNEL";
 		    ResultSet rs = stmt.executeQuery(query);
@@ -85,29 +107,12 @@ public class channelExport
 		    try
 		    {
 		        while (rs.next()) 
-		        {                 
-		            String fileName = rs.getString(2);
-		            if (columns == 2 || fileName.length() > 100) 
-		            {
-		            int pos1 = fileName.indexOf("<name>") + 6;
-		            int pos2 = fileName.indexOf("</name>");
-		            fileName = fileName.substring(pos1, pos2);
-		            }
-		            fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
-		       
+		        {  
 		            //column containing CLOB
 		            String XMLdata = rs.getString(4);
-		            //exports all channel export files to the specified directory
-		            try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"channelBackup\\" + fileName+".xml")) 
-		            {
-		                XMLout.println(XMLdata);
-		                XMLout.close();
-		            } 
-		            catch (FileNotFoundException fileExcept2) 
-		            {
-		                System.out.println("First channel export");
-		                System.out.println("I DIDN'T FIND THE FILE");
-		            }
+		            rawChannelCLOB.add(XMLdata.trim());
+		            channelNames.add(rs.getString(2));
+		            channelIDs.add(rs.getString(1));		            
 		        }
 		    } 
 		    catch (SQLException sqlExcept) 
@@ -129,7 +134,7 @@ public class channelExport
       //Exports and edits the channelMetadata
       try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement()) 
       {
-          String query = "SELECT * FROM CONFIGURATION";
+          String query = "SELECT * FROM CONFIGURATION where NAME LIKE '%channelMetadata%'";
           ResultSet rs = stmt.executeQuery(query);
           ResultSetMetaData RSMD = rs.getMetaData();
           int columns = RSMD.getColumnCount();
@@ -139,620 +144,495 @@ public class channelExport
 
           try 
           {
-            while (rs.next()) 
-            {
-              String fileName = rs.getString(2);
-              if (columns == 2 || fileName.length() > 100) 
-              {
-                int pos1 = fileName.indexOf("<name>") + 6;
-                int pos2 = fileName.indexOf("</name>");
-                fileName = fileName.substring(pos1, pos2);
-              }
-              fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
-                 
-              //CHANGE THIS BELOW
-              //THIS COLUMN INDEX chooses what data to convert to XML
-              String XMLdata = rs.getString(3);
-
-              //exports all CONFIGURATION files to the specified directory
-              try (PrintWriter XMLout = new PrintWriter(backupFolderPath+"fullMirthExport\\configurationFiles\\" + fileName)) 
-              {
-                  XMLout.println(XMLdata);
-                  XMLout.close();
-              } 
-              catch (FileNotFoundException fileExcept2) 
-              {
-                  System.out.println("Second channel export");
-                  System.out.println("I DIDN'T FIND THE FILE");
-              }
-            
-              if(rs.getString(2).equals("channelMetadata"))
-              {
-                //Captured Channel ID
-                String capturedChannelID = "";
-
-                //creates the path if it doesn't exist
-                File dir = new File(backupFolderPath+"channelBackup");
-                dir.getParentFile().mkdirs();
-                dir.mkdirs();
-                channelNames.clear(); //clears the current arraylist for channel names
-                channelIDs.clear(); //clears the current captured channel IDs
-
-                /**
-                 * This loop:
-                 * 1. Finds all files in the file backup directory from above
-                 * 2. Reads each file and finds the channel ID
-                 * 3. Adds the ID to an array for use later when exporting channelMetadata
-                 */
-                File[] channelDirectory = dir.listFiles();
-                String currentReadChannelXML = "";
-                for(int b=0;b<channelDirectory.length;b++)
-                {
-                  channelNames.add(channelDirectory[b].getName());
-                }
-                for(int c=0;c<channelNames.size();c++)
-                {
-                  File currentChannelXML = new File(backupFolderPath+"channelBackup\\"+channelNames.get(c));
-                  try(Scanner channelDirReader = new Scanner(currentChannelXML))
-                  {
-                    while(channelDirReader.hasNext())
-                    {
-                      String line = channelDirReader.nextLine();
-                      if(line.contains("<id>"))
-                      {
-                        capturedChannelID = line.replace("<id>","").replace("</id>","").trim();
-                        channelIDs.add(capturedChannelID);
-                      }
-                      currentReadChannelXML += line+"\n";
-                    }
-                    masterChannelXML.add(currentReadChannelXML);
-                    currentReadChannelXML = "";
-                    channelDirReader.close();
-                  }
-                }
-
-                String channelMetadataXML = rs.getString(3);
-                String[] splitByRootCMD = channelMetadataXML.split("<entry>");
-
-                /**
-                 * This section:
-                 * 1. takes the ID of each channel
-                 * 2. Finds the metadata associated with the channel
-                 * 3. Adds the metadata to an array
-                 */
-                for (int x=0; x<splitByRootCMD.length;x++)
-                {
-                  for(int f=0;f<channelIDs.size();f++)
-                  {
-                    if(splitByRootCMD[x].contains((channelIDs.get(f)).toString()))
-                    {
-                      //cleans up the found root from channelMetadata
-                      String channelMetadataCleanup = splitByRootCMD[x];
-                      channelMetadataCleanup.replace("<string>" + channelIDs.get(f) + "</string>","").replace("</entry>","").replace("<com.mirth.connect.model.ChannelMetadata>","").replace("</com.mirth.connect.model.ChannelMetadata>", "");
-                      String cmdString = "";
-                      String[] splitFoundRoot = channelMetadataCleanup.split("\n");
-                      for (int b=0;b<splitFoundRoot.length;b++)
-                      {
-                        if(!splitFoundRoot[b].matches("com.mirth.connect.model.ChannelMetadata"))
-                        {
-                          if(!splitFoundRoot[b].contains("</entry>"))
-                          {
-                            if(!splitFoundRoot[b].matches("string"))
-                            {
-                              cmdString += splitFoundRoot[b]+"\n";
-                            }
-                          }
-                        }
-                      }
-                      extractedCMDArray.add(cmdString.trim());
-                    }
-                  }
-                }
-
-                /**
-                 * This loop takes the channel ID from channelIDs and compares it to the current extractedCMDArray
-                 * Then it will reorder the captured XML in the extractedCMDArray and reorder it to match the names and channel IDs
-                 */
-                for(int z=0;z<extractedCMDArray.size();z++)
-                {
-                  int zPlaceholder = 0;
-                  String channelIDFromArray = channelIDs.get(z).toString();
-                  while(!extractedCMDArray.get(zPlaceholder).toString().contains(channelIDFromArray))
-                  {
-                    zPlaceholder++;
-                  }
-                  extractedCMDArrayREORDERED.add(extractedCMDArray.get(zPlaceholder));
-                }
-
-                //Reorders extractedCMDArray to match above loop
-                for(int q=0;q<extractedCMDArray.size();q++)
-                {
-                  extractedCMDArray.set(q, extractedCMDArrayREORDERED.get(q));
-                }                
-
-                /**
-                 * 1. Grabs the data from the extractedCMDArray
-                 * 2. Splits the array by newlines
-                 * 3. Skips the "string" line
-                 * 4. recreates the "cmdString" and adds it back to the extractedCMDArray
-                 * 
-                 * NOTE: Updated to skip "</map> in some mappings"
-                 */
-                for(int h=0;h<extractedCMDArray.size();h++)
-                {
-                    String cmdString = "";
-                    String[] splitFoundRoot = extractedCMDArray.get(h).toString().split("\n");
-                    for(int d=1;d<splitFoundRoot.length;d++)
-                    {
-                      if(splitFoundRoot[d].contains("</map>"))
-                      { 
-                        System.out.println("MAP DETECTED");
-                      }
-                      else
-                      {
-                        cmdString += splitFoundRoot[d]+"\n";
-                        cmdString.trim();
-                      }
-                      
-                    }
-                    extractedCMDArray.set(h,cmdString);
-                    splitFoundRoot = new String[splitFoundRoot.length];
-                }
-
-                //creates the directory if it does not yet exist:
-                File cmdDir = new File(backupFolderPath+"channelMetadataBackup\\");
-                cmdDir.getParentFile().mkdirs();
-                cmdDir.mkdirs();
-
-                //Prints files to the channelMetadata backup directory
-                for(int v=0;v<extractedCMDArray.size();v++)
-                {
-                  try (PrintWriter channelMetadataOut = new PrintWriter(backupFolderPath+"channelMetadataBackup\\" + channelIDs.get(v)+".xml"))
-                  {
-                    channelMetadataOut.print(extractedCMDArray.get(v));
-                  }
-                  catch (FileNotFoundException fileExcept2) 
-                  {
-                    System.out.println("I DIDN'T FIND THE channelMetadata FILE");
-                  }
-                }
-                
-                //Cleaned up channelMetadata Export
-                File metadataDir = new File(backupFolderPath+"channelMetadataBackup");
-                metadataDir.getParentFile().mkdirs();
-                File[] metadataDirectory = metadataDir.listFiles();
-                for(int m=0;m<metadataDirectory.length;m++)
-                {
-                	ArrayList reformattedMD = new ArrayList();
-                	File currentMetadataFile = new File(backupFolderPath+"channelMetadataBackup\\"+metadataDirectory[m].getName());
-                	try(Scanner mdReader = new Scanner(currentMetadataFile))
-                	{
-                		//reformattedMD.add("<exportData>\n");
-                		reformattedMD.add("<exportData>\n");
-                		reformattedMD.add("<metadata>\n");
-                		while(mdReader.hasNext())
-                		{
-                			String line = mdReader.nextLine();
-                			if(!line.contains("com.mirth.connect.model.ChannelMetadata"))
-                			{
-                				reformattedMD.add(line+"\n");
-                			}
-                		}
-                		reformattedMD.add("</metadata>\n");
-                		reformattedMD.add("</exportData>");
-                	  
-                	  try (PrintWriter mdOutput = new PrintWriter(backupFolderPath+"channelMetadataBackup\\"+metadataDirectory[m].getName()))
-                	  {
-                		  for(int c=0;c<reformattedMD.size();c++)
-                		  {
-                			  mdOutput.print(reformattedMD.get(c));
-                		  }                	  	  
-                	  	  mdOutput.close();
-                	  }
-                	  mdReader.close();
-                	}
-                	reformattedMD.clear();
-                }
-              }              
-            } 
+        	  while (rs.next()) 
+        	  { 
+	              //CHANGE THIS BELOW
+	              //THIS COLUMN INDEX chooses what data to convert to XML
+	              String XMLdata = rs.getString(3);
+	              
+	              String channelMetadataXML = XMLdata;
+	              
+	              //added in 2.2.3
+	              String[] channelMetadataXMLSplit = channelMetadataXML.split("\n");
+	              String currentCMDSplitLine = "";
+	              for(int yy=0;yy<channelMetadataXMLSplit.length;yy++)
+	              {
+	            	  String thisLine = channelMetadataXMLSplit[yy];
+	            	  if(thisLine.contains("map>") || thisLine.contains("<map") || thisLine.contains("<com.mirth.connect.model.ChannelMetadata>") || thisLine.contains("</com.mirth.connect.model.ChannelMetadata>"))
+	            	  {
+	            		  //skips any "map" segments
+	            	  }
+	            	  else if(thisLine.contains("</entry>"))
+	            	  {
+	            		  //ends the current CMD and adds it to the array
+	            		  currentCMDSplitLine += thisLine;
+	            		  channelMetadata.add(currentCMDSplitLine);
+	            		  currentCMDSplitLine = "";
+	            	  }
+	            	  else
+	            	  {
+	            		  currentCMDSplitLine += thisLine + "\n";
+	            	  }
+	              }                    
+        	  } 
           } 
           catch (SQLException sqlExcept) 
           {
-            System.out.println("FAILED MISERABLY");
-            System.out.println(sqlExcept);
+        	  System.out.println("FAILED MISERABLY");
+          		System.out.println(sqlExcept);
           }
-            
-        } 
-        catch (Exception e) 
-        {
-            e.printStackTrace();
-        }
-        /** updated logic will:
-         * 1. Initialize 2 array lists: currentChannelXML and currentMetadata
-         * Those will be used to read from the master array lists. They'll be cycled and cleared after each iteration
-         * 2. Capture and remove the end of the current array
-         * 3. Adds the channelMetadata to the channel
-         * 4. Writes the full files to the channelBackup folder
-         */
+       } 
+       catch (Exception e) 
+       {
+           e.printStackTrace();
+       }
 
-        //calls codeTemplates
+       //calls codeTemplates
         if(includeCTLs == true || isFullMirthExport == true)
         {
-          exportCodeTemplates(host);
+        	exportCodeTemplates(host);
         }
-        
-        //1. Creates new arrays and loop
-        ArrayList currentChannelXML = new ArrayList<>();
-        ArrayList currentMetadata = new ArrayList<>();
-        int currentChannelSize = 0;
-        for(int c=0;c<extractedCMDArray.size();c++)
-        {
-          //splits the targeted full channel XML
-          String[] splitCurrentChannelXML = masterChannelXML.get(c).toString().split("\n");
-          for(int n=0;n<splitCurrentChannelXML.length;n++)
-          {
-            currentChannelXML.add(splitCurrentChannelXML[n]);
-          }
-          //spilts the corresponding channelMetadata XML
-          File currentCMDFile = new File(backupFolderPath+"channelMetadataBackup\\" + channelIDs.get(c) + ".xml");
-          try(Scanner channelReader = new Scanner(currentCMDFile))
-          {                      
-            while(channelReader.hasNext())
+         
+        /**Updated 2.2.3 logic
+         * 1. Iterates over the channelNames array and creates the XML file
+         * 2. Grabs the channel and splits it into lines
+         * 3. Checks if the current line contains a Mirth channel ID. If so, it will add the proper metaData to the XML
+         * 4. Adds CTLs if necessary
+         * 5. Exports the channel XML
+         */
+        boolean sftpCheck = true;
+        for(int cm=0;cm<channelNames.size();cm++)
+        {        
+        	//new in 2.2.3 - Evaluating if an SFTP restart channel is needed
+        	if(cm == channelNames.size() -1 && sftpCheck == true)
+        	{                
+                sftpChannelBuilder(host);
+                sftpCheck = false;
+        	}
+        	
+        	File currentChannelFile = new File(backupFolderPath+"channelBackup\\" + channelNames.get(cm)+".xml");
+            try 
+    		{
+            	currentChannelFile.createNewFile();
+    		} 
+    		catch (IOException e) 
+    		{
+    			e.printStackTrace();
+    		}
+            
+            //builds the channel with/without CTLs
+            String[] currentChannelSplit = rawChannelCLOB.get(cm).toString().split("\n");
+            String channelXMLOutput = "";
+            for(int kl=0;kl<currentChannelSplit.length;kl++)
             {
-              String line = channelReader.nextLine();
-              currentMetadata.add(line);
-            }
-            channelReader.close();
-          }
-          currentChannelSize = currentChannelXML.size();
-
-          //2. Removes the last item from the channel array, stores it for later, and adds the channelMetadata to the channel array
-          String endOfChannelArray = currentChannelXML.get(currentChannelSize-1).toString();
-          currentChannelXML.remove(currentChannelSize-1);
-//          for(int p=1;p<currentMetadata.size();p++)
-          for(int p=0;p<currentMetadata.size();p++)
-          {
-            currentChannelXML.add(currentMetadata.get(p));
-          }
-          currentChannelXML.add(endOfChannelArray);
-
- 
-          //3. Overwrites the data to the existing channel backup XML files
-          try (PrintWriter channelExportFinal = new PrintWriter(backupFolderPath+"channelBackup\\" + channelNames.get(c)))
-          {
-            for (int h=0; h<currentChannelXML.size(); h++)
-            {
-            	//section below was added in 2.2.1 to filter out certain characters
-          	    //characters found so far: '…'
-            	String[] badCharacters = {"…"};
-            	String[] goodReplacements = {"..."};
-            	for(int bad=0;bad<badCharacters.length;bad++)
+            	String line = currentChannelSplit[kl].trim();
+            	if(kl == currentChannelSplit.length-1)
             	{
-            		if(currentChannelXML.get(h).toString().contains(badCharacters[bad]))
-                	{
-                		String replaceBadCharacter = currentChannelXML.get(h).toString().replace(badCharacters[bad], goodReplacements[bad]);
-                		currentChannelXML.set(h, replaceBadCharacter);
-                	}
-            	}            	
-            		
-	            channelExportFinal.print(currentChannelXML.get(h)+"\n");
-	            if(currentChannelXML.get(h).toString().contains("</metadata>") && includeCTLs == true)
-	            {
-	              for(int b=0;b<allCTLArray.size();b++)
-	              {            	  
-	            	  channelExportFinal.print(allCTLArray.get(b));
-	              }
-	            }
+            		for(int jk=0;jk<channelIDs.size();jk++)
+            		{
+            			if(channelMetadata.get(jk).toString().contains(channelIDs.get(cm).toString()))
+            			{
+            				String[] editCMD = channelMetadata.get(jk).toString().split("\n");
+            				for(int po=0;po<editCMD.length;po++)
+            				{
+            					if(editCMD[po].contains("<entry>"))
+            					{
+            						channelXMLOutput += "<exportData>\n<metadata>\n";
+            					}
+            					else if(editCMD[po].contains("</entry>"))
+            					{         						
+            						channelXMLOutput += "</metadata>\n";
+            					}
+            					else if(editCMD[po].contains("string>"))
+            					{
+            						//skip the string line
+            					}
+            					else
+            					{
+            						channelXMLOutput += editCMD[po].trim() + "\n";
+            					}
+            				}
+            			}
+            		}
+            	}
+            	else
+            	{
+            		channelXMLOutput += line + "\n";
+            		if(line.contains("<scheme>"))
+            		{
+            			String schemeType = line.replace("<scheme>", "").replace("</scheme>", "").toUpperCase().trim();
+            			if(schemeType.contains("FTP"))
+            			{
+            				System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
+            				sftpConnectedChannels.add(channelNames.get(cm));
+            				isSFTPChannelNeeded = true;
+            			}
+            		}
+            	}
             }
-            channelExportFinal.close();
-          }
-          catch (FileNotFoundException fileExcept2) 
-          {
-            System.out.println("I DIDN'T FIND THE channelMetadata FILE");
-          }
-          
-          //clears both arrays for the next loop
-          currentChannelXML.clear();
-          currentMetadata.clear();
-        }             
-        //END channelExport Appending
-        curExtractedCT.clear();
-        currentCodeTemplateLib.clear();
-        completeCodeTemplates.clear();
-        codeTemplateIDs.clear();
-        codeTemplateLibraryNames.clear();
-        codeTemplateNames.clear();
-        allCTLArray.clear();
-        extractedCMDArray.clear();
-        masterChannelXML.clear();
-        extractedCMDArrayREORDERED.clear();
+            
+            if(includeCTLs == true)
+            {
+            	//channelXMLOutput += "</codeTemplateLibraries>\n";
+            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	{
+            		channelXMLOutput += "<codeTemplateLibraries>\n";
+                	
+                	for(int hi=0;hi<codeTemplateLibrary_XML.size();hi++)
+                	{
+                		channelXMLOutput += codeTemplateLibrary_XML.get(hi);
+                	}
+            		channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
+            	}
+            	else
+            	{
+            		//skip CTLs for the SFTP restart channel if the channel has not been imported into the database
+            	}            	
+            }
+            else
+            {
+            	//below checks if this is a new SFTP channel generation. If so, it will skip adding the exportdata tag
+            	//if it is not a new generation (aka, SFTP restart was already in the DB), then it will add the tag
+            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	{
+            		channelXMLOutput += "</exportData>\n";
+            	}
+            }
+            channelXMLOutput += "</channel>";
+            
+            try (PrintWriter ctlOut = new PrintWriter(currentChannelFile)) 
+            {
+    			ctlOut.println(channelXMLOutput);
+    			ctlOut.close();
+            } 
+            catch (FileNotFoundException fileExcept2) 
+            {
+                System.out.println("Second channel export");
+                System.out.println("I DIDN'T FIND THE FILE");
+            }
+            
+            //replaces the rawChannelCLOB with the new result
+            rawChannelCLOB.set(cm, channelXMLOutput);
+        }                       
+        //END channelExport Appending        
+        
+//        //new in 2.2.3 - Evaluating if an SFTP restart channel is needed
+//        sftpChannelBuilder(host);
+        
         return "metaDataExported";
     }
 
     public static String exportCodeTemplates(String host) throws FileNotFoundException
     {
-      //creates backup directory if it does not exist
-      File dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
-      dir.mkdirs();
-      dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\");
-      dir.mkdirs();
+    	//creates backup directory if it does not exist
+    	File dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+    	dir.mkdirs();
+    	dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\");
+    	dir.mkdirs();
 
-      //int to track if the first query has ran
-      int queryCount = 0;
+    	//int to track if the first query has ran
+    	int queryCount = 0;
+    	
+    	String query="";
+    	while(queryCount <= 1)
+    	{
+    		//exports CodeTemplateLibraries
+    		try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+    		{
+    			//sets queries
+    			if(queryCount == 0)
+    			{
+    				query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
+    			}
+    			else
+    			{
+    				query = "SELECT * FROM CODE_TEMPLATE";
+    			}
+    			ResultSet rs = stmt.executeQuery(query);
+    			ResultSetMetaData RSMD = rs.getMetaData();
+    			int columns = RSMD.getColumnCount();
 
-      String query="";
-      while(queryCount <= 1)
-      {
-        //exports CodeTemplateLibraries
-        try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
-        {
-          //sets queries
-          if(queryCount == 0)
-          {
-            query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
-          }
-          else
-          {
-            query = "SELECT * FROM CODE_TEMPLATE";
-          }
-          ResultSet rs = stmt.executeQuery(query);
-          ResultSetMetaData RSMD = rs.getMetaData();
-          int columns = RSMD.getColumnCount();
+    			try
+    			{
+    				while (rs.next()) 
+    				{
+    					//column containing CLOB
+    					String XMLdata = rs.getString(4);
+    					//exports all channel export files to the specified directory
+    					String destination = "";
+    					if(queryCount == 0)
+    					{
+    						codeTemplateLibrary_NAME.add(rs.getString(2));
+    						codeTemplateLibrary_XML.add(rs.getString(4));				
+    					}
+    					else
+    					{
+    						codeTemplate_ID.add(rs.getString(1));
+    						codeTemplate_XML.add(rs.getString(4));
+    					}
+    				}
+    			} 
+    			catch (SQLException sqlExcept) 
+    			{
+    				System.out.println("FAILED MISERABLY");
+    				System.out.println(sqlExcept);
+    			}
+    		}
+    		catch (Exception e) 
+    		{
+    			e.printStackTrace();
+    		}
+    		queryCount++;
+    		System.out.println("Query Count: " + queryCount);
+    	}   	
 
+    	//adds the opening "codeTemplateLibraries" tag
+    	allCTLArray.add("<codeTemplateLibraries>"+"\n");
+    	
+    	//New for 2.2.3
+    	//Check that will read the code template library XML, find the IDs, and then replace them with the specifig information
+    	for(int bb=0;bb<codeTemplateLibrary_XML.size();bb++)
+    	{
+    		String currentCTL_XML = codeTemplateLibrary_XML.get(bb).toString();
+    		String fullCurrentCTL_XML = "";
+    		String[] splitCurrentCTL_XML = currentCTL_XML.split("\n");
+    		
+    		int idCount = 0;
+    		for(int aa=0;aa<splitCurrentCTL_XML.length;aa++)
+    		{
+    			String line = splitCurrentCTL_XML[aa].trim();
+    			if(!line.contains("<id>"))
+    			{
+    				fullCurrentCTL_XML += line + "\n";
+    			}
+    			else if(line.contains("<id>") && idCount == 0)
+    			{
+    				idCount++;
+    				fullCurrentCTL_XML += line + "\n";
+    			}
+    			else if(line.contains("<codeTemplate "))
+    			{
+    				System.out.println(line);
+    			}
+    			else if(idCount>0 && line.contains("<id>"))
+    			{
+    				String editedLine = line.replace("<id>", "").replace("</id>", "");
+    				String lineToReplaceID = "";
+    				for(int cc=0;cc<codeTemplate_ID.size();cc++)
+    				{    					
+    					if(editedLine.trim().equals(codeTemplate_ID.get(cc).toString().trim()))
+    					{
+    						String[] removedParentTagsSplit = codeTemplate_XML.get(cc).toString().split("\n");
+    						String removedParentTags = "";
+    						for(int vv=0;vv<removedParentTagsSplit.length;vv++)
+    						{
+    							if(!removedParentTagsSplit[vv].toString().contains("codeTemplate"))
+    							{
+    								removedParentTags += removedParentTagsSplit[vv].toString() + "\n";
+    							}
+    						}
+    						
+    						fullCurrentCTL_XML += removedParentTags;
+    					}
+    				}
+    			}
+    		}
+    		codeTemplateLibrary_XML.set(bb, fullCurrentCTL_XML);
+    	}
+    	
+    	//Added in 2.2.3
+    	//adds the edited code templates to the allCTLArray
+    	for (int ww=0;ww<codeTemplateLibrary_XML.size();ww++)
+    	{
+    		allCTLArray.add(codeTemplateLibrary_XML.get(ww));
+    	}
 
-          try
-          {
-            while (rs.next()) 
+    	//adds the closing "codeTemplateLibraries" tag
+    	allCTLArray.add("</codeTemplateLibraries>");
+    	
+    	//the below code creates a master codeTemplateLibrary String from all x CTLs
+    	String allCodeTemplateLibraries = "";
+    	File ctLDIR = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
+    	ctLDIR.getParentFile().mkdirs();
+    	for(int m=0;m<codeTemplateLibrary_NAME.size();m++)
+    	{
+    		File currentCTLFile = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibrary_NAME.get(m)+".xml");
+    		try 
+    		{
+				currentCTLFile.createNewFile();
+			} 
+    		catch (IOException e) 
+    		{
+				e.printStackTrace();
+			}
+    		try (PrintWriter ctlOut = new PrintWriter(currentCTLFile)) 
             {
-              String fileName = rs.getString(2);
-              if (columns == 2 || fileName.length() > 100) 
-              {
-                int pos1 = fileName.indexOf("<name>") + 6;
-                int pos2 = fileName.indexOf("</name>");
-                fileName = fileName.substring(pos1, pos2);
-              }
-              fileName = fileName.replace("/", "-FW_SLASH-").replace("\\", "-BK_SLASH-").replace(":", "-COLON-").replace("*", "-ASTERISK-").replace("?", "-QUESTION_MARK-").replace("\"", "-QUOT_MARK-").replace("<", "-LESS_THAN-").replace(">", "-GREATER_THAN-").replace("|", "-VERTICAL_BAR-");
-                
-              //column containing CLOB
-              String XMLdata = rs.getString(4);
-              //exports all channel export files to the specified directory
-              String destination = "";
-              if(queryCount == 0)
-              {
-                query = "SELECT * FROM CODE_TEMPLATE_LIBRARY";
-                destination = backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\";
-
-              }
-              else
-              {
-                query = "SELECT * FROM CODE_TEMPLATE";
-                destination = backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\";
-              }
-              try (PrintWriter XMLout = new PrintWriter(destination + fileName+".xml")) 
-              {
-                XMLout.println(XMLdata);
-                XMLout.close();
-              } 
-              catch (FileNotFoundException fileExcept2) 
-              {
-                System.out.println("Third channel export");
+    			ctlOut.println(codeTemplateLibrary_XML.get(m));
+    			ctlOut.close();
+            } 
+            catch (FileNotFoundException fileExcept2) 
+            {
+                System.out.println("Second channel export");
                 System.out.println("I DIDN'T FIND THE FILE");
-              }
             }
-          } 
-          catch (SQLException sqlExcept) 
-          {
-            System.out.println("FAILED MISERABLY");
-            System.out.println(sqlExcept);
-          }
-        }
-        catch (Exception e) 
-        {
-          e.printStackTrace();
-        }
-        queryCount++;
-        System.out.println("Query Count: " + queryCount);
-      }
-
-      //captures all code template XML data and stores it in an array
-      File[] codeTemplateDirectory = dir.listFiles();
-      String currentCodeTemplateXML = "";
-      for(int b=0;b<codeTemplateDirectory.length;b++)
-      {
-        codeTemplateNames.add(codeTemplateDirectory[b].getName());
-      }
-      for(int c=0;c<codeTemplateNames.size();c++)
-      {        
-        File currentCTXML = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplates\\"+codeTemplateNames.get(c));
-        try(Scanner channelDirReader = new Scanner(currentCTXML))
-        {
-          while(channelDirReader.hasNext())
-          {
-            String line = channelDirReader.nextLine();
-            currentCodeTemplateXML += line+"\n";
-          }
-          completeCodeTemplates.add(currentCodeTemplateXML);
-          currentCodeTemplateXML = "";
-          channelDirReader.close();
-        }
-      }
-
-      //reads the code template library and appends the code template information
-      dir = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
-      File[] codeTemplateLibraryDir = dir.listFiles();
-      //gets names of code template libraries
-      for(int j=0;j<codeTemplateLibraryDir.length;j++)
-      {
-        codeTemplateLibraryNames.add(codeTemplateLibraryDir[j].getName());
-      }
-
-      //adds the opening "codeTemplateLibraries" tag
-      allCTLArray.add("<codeTemplateLibraries>"+"\n");
-
-      //parses and reads each file
-      //appends the channel template to the channel template library 
-      for(int v=0;v<codeTemplateLibraryNames.size();v++)
-      {
-        File currentCodeTemplateLibXML = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v));
-        try(Scanner channelDirReader = new Scanner(currentCodeTemplateLibXML))
-        {
-          //this loop does the following:
-          /**
-           * 1. declares an idCount to skip the Code Template Library ID
-           * 2. reads the specified code template IDs from the code template library
-           * 3. Trims and adds them to an array
-           * 4. clears the codeTemplateIDs array when finished
-           */
-          int idCount = 0;
-          while(channelDirReader.hasNext())
-          {
-            String capturedCTLID = "";
-            String line = channelDirReader.nextLine();
-            //checks if the ID is from the "channel template library" vs the "channel template"
-            if(line.contains("<id>") && idCount == 0)
-            {
-              idCount++;
-            }
-            else if(line.contains("<id>"))
-            {
-              capturedCTLID = line.replace("<id>","").replace("</id>","").trim();
-              codeTemplateIDs.add(capturedCTLID);
-            }
-            currentCodeTemplateLib.add(line);
-          }
-          idCount = 0;
-          channelDirReader.close();
-
-          /**
-           * 1. take and read the "currentCodeTemplateLib" array
-           * 2. Check if the current line.contains(<id>)
-           * 3. If so, trim the captured value and see if "completeCodeTemplates" has the trimmed value
-           * 4. Replace the current ID line with the full Code Template Library XML
-           * 5. Add to array and write it out
-           */
-          int idSkipper = 0;
-          boolean foundIDInCT = false;
-          for(int y=0;y<currentCodeTemplateLib.size();y++)
-          {
-            String currentPoint = currentCodeTemplateLib.get(y).toString();
-            if(currentPoint.contains("<id>") && idSkipper == 0)
-            {
-              idSkipper++;
-            }
-            else if(currentPoint.contains("<id>"))
-            {
-              String currentCapID = currentPoint.replace("<id>","").replace("</id>","").trim();
-              for(int s=0;s<completeCodeTemplates.size();s++)
-              {
-                if(completeCodeTemplates.get(s).toString().contains(currentCapID))
-                {
-                  //added for evaluation to see if found ID is in a code template library
-                  foundIDInCT = true;
-
-                  String editedCTString = "";
-                  String[] splitCTByNL = completeCodeTemplates.get(s).toString().split("\n");
-    
-                  for(int u=0;u<splitCTByNL.length;u++)
-                  {
-                    if(u>0 && u<splitCTByNL.length-1)
-                    {
-                      curExtractedCT.add(splitCTByNL[u]);
-                    }
-                  }
-                  for(int r=0;r<curExtractedCT.size();r++)
-                  {
-                    editedCTString = editedCTString + curExtractedCT.get(r)+"\n";
-                  }
-                  currentCodeTemplateLib.set(y, editedCTString);
-                  editedCTString = "";
-                  curExtractedCT.clear();
-                }
-                else if(s == completeCodeTemplates.size()-1 && foundIDInCT == false)
-                {
-                  for(int n=0;n<3;n++)
-                  {
-                    if(n==0)
-                    {
-                      currentCodeTemplateLib.remove(y+1);
-                    }
-                    else if(n==1)
-                    { 
-                      currentCodeTemplateLib.remove(y);
-                    }
-                    else if (n==2)
-                    {
-                      currentCodeTemplateLib.remove(y-1);
-                    }
-                    else
-                    {
-                      System.out.println("FIRED ON 3");
-                    }
-                  }
-                  y = y-3;
-                }
-              }            
-              foundIDInCT = false;  
-            }
-          }
-          idSkipper = 0;
-
-          //adds the first tag
-
-          //writes to file
-          try (PrintWriter cTLOutput = new PrintWriter(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryNames.get(v)))
-          {
-            String appendedCTLMasterAddition = "";
-            for(int c=0;c<currentCodeTemplateLib.size();c++)
-            {
-              cTLOutput.print(currentCodeTemplateLib.get(c));
-              appendedCTLMasterAddition += (currentCodeTemplateLib.get(c)+"\n");
-            }
-            allCTLArray.add(appendedCTLMasterAddition);
-            appendedCTLMasterAddition = "";
-            cTLOutput.close();
-          }
-          codeTemplateIDs.clear();
-        }
-        currentCodeTemplateLib.clear();
-      }
-
-      //adds the closing "codeTemplateLibraries" tag
-      allCTLArray.add("</codeTemplateLibraries>");
-
-      //the below code creates a master codeTemplateLibrary String from all x CTLs
-      String allCodeTemplateLibraries = "";
-      File ctLDIR = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\");
-      ctLDIR.getParentFile().mkdirs();
-      File[] codeTemplateLibraryDirectoryList = ctLDIR.listFiles();
-      for(int m=0;m<codeTemplateLibraryDirectoryList.length;m++)
-      {
-        File currentCTLFile = new File(backupFolderPath+"channelCodeTemplatesBackup\\codeTemplateLibraries\\"+codeTemplateLibraryDirectoryList[m].getName());
-        try(Scanner channelDirReader = new Scanner(currentCTLFile))
-        {
-          while(channelDirReader.hasNext())
-          {
-            String line = channelDirReader.nextLine();
-            allCodeTemplateLibraries = allCodeTemplateLibraries + line + "\n";
-          }
-        }
-      }
-      return "codeTemplates and Libraries Exported";
+    	}    	
+    	return "codeTemplates and Libraries Exported";
     }
 
     public static String clearChannelFolder()
     {
-      File channelDirFileList = new File(backupFolderPath+"channelBackup\\");
-      if(channelDirFileList.exists())
-      {
-        String[] entries = channelDirFileList.list();
-        for (String s : entries) 
-        {
-          File currentFile = new File(channelDirFileList.getPath(), s);
-          //System.out.println("CURRENT FILE: " + currentFile);
-          currentFile.delete();
-          //System.out.println("FILE EXISTS?: " + currentFile.exists());
-        }
-      }
-      return "channel folder cleared";
+    	//added in 2.2.3 to clear the CTL and Full folders as well
+    	String[] folderPaths = {"channelBackup\\", "channelCodeTemplatesBackup\\codeTemplateLibraries\\", "fullMirthExport\\", "channelCodeTemplatesBackup\\"};
+    	for(int clear=0;clear<folderPaths.length;clear++)
+    	{
+    		File channelDirFileList = new File(backupFolderPath+folderPaths[clear]);
+        	if(channelDirFileList.exists())
+        	{
+        		String[] entries = channelDirFileList.list();
+        		for (String s : entries) 
+        		{
+        			File currentFile = new File(channelDirFileList.getPath(), s);
+        			currentFile.delete();
+        		}
+        		channelDirFileList.delete();
+        	}
+    	}
+    	return "channel folder cleared";
+    }
+    
+    //calls for fullConfigExport
+    public static int retrunChannelArraySize()
+    {
+    	return rawChannelCLOB.size();
+    }
+    
+    public static String returnCurrChannel(int place)
+    {
+    	return rawChannelCLOB.get(place).toString();
+    }
+        
+    public static int retrunCodeTemplateLibrarySize()
+    {
+    	return codeTemplateLibrary_XML.size();
+    }
+    
+    public static String returnCurrCTL(int place)
+    {
+    	return codeTemplateLibrary_XML.get(place).toString();
+    }
+
+    public static String sftpChannelBuilder(String host)
+    {
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 10)
+    	{
+    		System.out.println("I am greater than/equal to Mirth version 3.10.0");
+    		if(!channelNames.contains("SFTP Restart Channel"))
+    		{
+    			if(isSFTPChannelNeeded == true && sftpGenChoice == true)
+    			{
+    				generateSFTPTag = true;
+	    			sftpChannelNames += "[";
+	    			for(int nn=0;nn<sftpConnectedChannels.size();nn++) 
+	    			{
+	    				if(sftpConnectedChannels.size() == 1)
+	    				{
+	    					sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "'";
+	    				}
+	    				else
+	    				{
+	    					if(nn == sftpConnectedChannels.size()-1)
+	    					{
+	    						sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "'";
+	    					}
+	    					else
+	    					{
+	    						sftpChannelNames += "'" + sftpConnectedChannels.get(nn) + "', ";	
+	    					}    					
+	    				}
+	    			}
+	    			sftpChannelNames += "]";
+	    			System.out.println("Replacement for XML File: " + sftpChannelNames);
+	    			
+	    			InputStream inputStream = channelExport.class.getResourceAsStream("/SFTP Restart Channel.xml");
+	    			if (inputStream != null) 
+	    			{
+	    			    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) 
+	    			    {
+	    			        String line;
+	    			        while ((line = reader.readLine()) != null) 
+	    			        {
+	    			        	sftpRestartSplit.add(line);
+	    			        }
+	    			    } 
+	    			    catch (IOException e) 
+	    			    {
+	    			        e.printStackTrace();
+	    			    }
+	    			} 
+	    			else 
+	    			{
+	    			    System.err.println("File not found in resources.");
+	    			}
+	    			
+	    			//compiles the full XML and swaps out description and the target channels
+	    			String fullSFTPwithReplacements = "";
+	    			for(int fun=0;fun<sftpRestartSplit.size();fun++) 
+	    			{
+	    				String currentLine = sftpRestartSplit.get(fun).toString();
+	    				if(currentLine.contains("[&apos;CHANNEL NAME GOES HERE&apos;]"))
+	    				{
+	    					fullSFTPwithReplacements += currentLine.replace("[&apos;CHANNEL NAME GOES HERE&apos;]", sftpChannelNames) + "\n";
+	    				}
+	    				else if(currentLine.contains("CHANGETHATDATE"))
+	    				{
+	    					fullSFTPwithReplacements += currentLine.replace("CHANGETHATDATE", logCommands.getDateTime()) + "\n";
+	    				}
+	    				else
+	    				{
+	    					fullSFTPwithReplacements += currentLine + "\n";
+	    				}
+	    			}
+	    			channelNames.add("SFTP Restart Channel");
+	    			rawChannelCLOB.add(fullSFTPwithReplacements);
+	    			channelIDs.add("07f073af-c1b5-43a1-be3b-6d211f08cabb");
+	    			channelMetadata.add("nullPlaceholder");
+    			}
+    			else
+    			{
+    				if(sftpGenChoice == false)
+    				{
+    					System.out.println("User chose to disable SFTP generation via MORE FUNCTIONS");
+    				}
+    				else
+    				{
+    					System.out.println("No SFTP connection type was found. No need to create the channel");
+    				}    				
+    			}
+    		}
+    		else
+    		{
+    			System.out.println("SFTP Restart Channel already exists in client's database");
+    		}		
+    	}
+    	else
+    	{
+    		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
+    	}
+    	
+    	return "SFTP Restart Channel Added";
+    }
+    
+    public static boolean setSFTPGeneration(boolean choice)
+    {
+    	sftpGenChoice = choice;
+    	return sftpGenChoice;
+    }
+    
+    public static boolean allowSFTPGeneration()
+    {
+    	return sftpGenChoice;
     }
 }
