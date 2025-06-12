@@ -1,0 +1,31 @@
+=================================
+MCC (Mirth Configuration Creator)
+Programmed By: Caleb Meyers
+Current Version: 2.2.3
+Last Update: 6/12/25
+=================================
+
+Version 2.1.0:
+-First full beta release of MCC application
+
+Version 2.2.0:
+-Added backup functionality via the packaged MCC-SIDEKICK.jar application
+
+Version 2.2.1:
+-Added forced disconnects after Mirth Database queries/changes to avoid Mirth service hanging.
+-Added the full list of users to "CHECK UN" button and update Mirth password queries.
+-Changed "RESET UN/PW" and update password command to update only the selected Mirth username.
+-Fixed bad channel generation where channel scripts/descriptions contain "bad" characters that got translated when building XML. Character found: "…".
+
+Version 2.2.2:
+-Added "[MORE FUNCTIONS]" button to the GUI. "MORE FUNCTIONS" contains "REPAIR CORRUPT DB" and "DATABASE OVERVIEW"
+-"REPAIR CORRUPT DB" rebuilds the "log" folder in the database, then copies the files into the new folder
+-"DATABASE OVERVIEW" generates a report including Mirth version, database size, channels, and users
+-Fixed bug where Mirth service state checks were happening after changing the target Mirth database directory (causing issues in instances where Mirth DB files exist, but service was never installed)
+
+Version 2.2.3:
+-Restructured code to not export and rely on files from the database. Reads the data directly and stores necessary parts in ArrayLists
+-Fixed open database connection that would be left over when using the "DATABASE OVERVIEW" (from the checkUN call)
+-Fixed bug that would generate an "invalid" channelTags XML tag in the full configuration export if no channelTags were present in Mirth
+-Added feature where MCC will now automatically generate the "SFTP Restart Channel" if an SFTP connection type is detected. This generation is toggleable via "MORE FUNCTIONS" 
+-Added command to fully wipe and delete the full, code template, and channel folders between exports. Avoids issues if initial backup from 1 database is ran, then databases are switched, and a second backup is ran
