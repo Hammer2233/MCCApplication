@@ -263,9 +263,16 @@ public class channelExport
             			String schemeType = line.replace("<scheme>", "").replace("</scheme>", "").toUpperCase().trim();
             			if(schemeType.contains("FTP"))
             			{
-            				System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
-            				sftpConnectedChannels.add(channelNames.get(cm));
-            				isSFTPChannelNeeded = true;
+            				if(!sftpConnectedChannels.contains(channelNames.get(cm)))
+            				{
+            					System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
+                				sftpConnectedChannels.add(channelNames.get(cm));
+                				isSFTPChannelNeeded = true;
+            				} 
+            				else
+            				{
+            					System.out.println("Dupe SFTP connection caught for channel '" + channelNames.get(cm) + "'");
+            				}
             			}
             		}
             	}

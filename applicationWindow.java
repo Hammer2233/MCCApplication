@@ -89,7 +89,7 @@ public class applicationWindow extends JFrame implements ActionListener
               (new applicationWindow()).setVisible(true);
             }
           });
-        System.out.println("Hello");
+        System.out.println("Starting MCC");
     }
 
     private applicationWindow()
@@ -798,7 +798,7 @@ public class applicationWindow extends JFrame implements ActionListener
     private static String pwCMDEntered(String currentText)
     {
         String captured = currentText;
-        System.out.println("CAPTURED TEXT: " + captured);
+        //System.out.println("CAPTURED TEXT: " + captured);
         commandPWSpace.setText("");
 
         //events for each possible password/command
