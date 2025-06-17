@@ -50,7 +50,7 @@ public class applicationWindow extends JFrame implements ActionListener
     //declaring variables for the GUI
     public static JFrame frame = new JFrame("MCC-BETA");
     private JPanel mainAppBody;
-    private static JLabel labelVersion;
+    public static JLabel labelVersion;
     private static JPanel bottomButtonPanel;
     
     //Jpanels
@@ -206,6 +206,7 @@ public class applicationWindow extends JFrame implements ActionListener
         middleButtonPanel.add(moreFunctions, midGBC);
         
         westPanel.add(middleButtonPanel);
+        westPanel.add(labelVersion);
         
         //JPanel for image
         imagePanel = new JPanel();
@@ -293,6 +294,7 @@ public class applicationWindow extends JFrame implements ActionListener
         centerPanel.setVisible(true);
         centerPanel.add(logTextScroll);
         centerPanel.setPreferredSize(new Dimension(830, 370));
+        //centerPanel.add(labelVersion);
         add(centerPanel, BorderLayout.CENTER);
         
         //sets theme to anything other than the OG
@@ -1432,7 +1434,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 scrollPane.setPreferredSize(new Dimension(600, 250));
                 
                 logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
-            	JOptionPane.showMessageDialog(null, scrollPane, "Mirth-Derby Database Information:", JOptionPane.PLAIN_MESSAGE);
+            	JOptionPane.showMessageDialog(labelVersion, scrollPane, "Mirth-Derby Database Information:", JOptionPane.PLAIN_MESSAGE);
             }
             else if(additionalFeatureOption == 2)
             {
