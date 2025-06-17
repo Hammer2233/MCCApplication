@@ -226,6 +226,19 @@ public class channelExport
             for(int kl=0;kl<currentChannelSplit.length;kl++)
             {
             	String line = currentChannelSplit[kl].trim();
+            	
+            	//re added the portion to account for bad ascii characters
+            	String[] badCharacters = {"…", "\u00A0", "\u0085"};
+            	String[] goodReplacements = {"...", " ", " "};
+            	
+            	for(int charCheck=0; charCheck<badCharacters.length; charCheck++)
+            	{
+            		if(line.contains(badCharacters[charCheck]))
+            		{
+            			line = line.replace(badCharacters[charCheck], goodReplacements[charCheck]);
+            		}
+            	}
+            	
             	if(kl == currentChannelSplit.length-1)
             	{
             		for(int jk=0;jk<channelIDs.size();jk++)
@@ -234,7 +247,7 @@ public class channelExport
             			{
             				String[] editCMD = channelMetadata.get(jk).toString().split("\n");
             				for(int po=0;po<editCMD.length;po++)
-            				{
+            				{            					            					
             					if(editCMD[po].contains("<entry>"))
             					{
             						channelXMLOutput += "<exportData>\n<metadata>\n";
@@ -536,7 +549,7 @@ public class channelExport
     	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 10)
     	{
     		System.out.println("I am greater than/equal to Mirth version 3.10.0");
-    		if(!channelNames.contains("SFTP Restart Channel"))
+    		if(!channelNames.contains("SFTP Restart Channel") && !channelIDs.contains("07f073af-c1b5-43a1-be3b-6d211f08cabb"))
     		{
     			if(isSFTPChannelNeeded == true && sftpGenChoice == true)
     			{

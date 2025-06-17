@@ -2,7 +2,7 @@
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
 Current Version: 2.2.3
-Last Update: 6/12/25
+Last Update: 6/17/25
 =================================
 
 Version 2.1.0:
@@ -29,3 +29,5 @@ Version 2.2.3:
 -Fixed bug that would generate an "invalid" channelTags XML tag in the full configuration export if no channelTags were present in Mirth
 -Added feature where MCC will now automatically generate the "SFTP Restart Channel" if an SFTP connection type is detected. This generation is toggleable via "MORE FUNCTIONS" 
 -Added command to fully wipe and delete the full, code template, and channel folders between exports. Avoids issues if initial backup from 1 database is ran, then databases are switched, and a second backup is ran
+-Fixed bug and added additional check when generating the SFTP Restart Channel. Bug was not checking if the SFTP Restart Channel id was in the current arraylist. If so, then do not generate the channel
+-Fixed popups from MCC to snap to the application, rather than the center of the screen
