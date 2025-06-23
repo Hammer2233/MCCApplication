@@ -11,6 +11,7 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -45,6 +46,10 @@ import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.JOptionPane;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
 public class applicationWindow extends JFrame implements ActionListener
 {
     //declaring variables for the GUI
@@ -78,8 +83,9 @@ public class applicationWindow extends JFrame implements ActionListener
     private ImageIcon iconImg = null;
     
     private static boolean toggleEnabled = false;
+    private static boolean readThemeFromConfigFile = false;
 
-    private static JTextArea logTextArea;
+    private static JTextArea logTextArea = new JTextArea(5,10);
     private static JScrollPane logTextScroll;
 
     public static void main(String[] args)
@@ -104,7 +110,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.3");
+        setTitle("MCC -2.2.4");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -283,7 +289,7 @@ public class applicationWindow extends JFrame implements ActionListener
 
         //Log area (center)
         centerPanel = new JPanel();
-        logTextArea = new JTextArea(5,10);
+        //logTextArea = new JTextArea(5,10);
         logTextArea.setLineWrap(true);
         logTextArea.setEditable(false);
 
@@ -306,6 +312,9 @@ public class applicationWindow extends JFrame implements ActionListener
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
+        
+        //loads theme from config file if detected
+        checkForConfigFile();
     }
     
     private static class returnMCCInfo implements ActionListener
@@ -470,6 +479,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     Main.setBackupFolder();
                     logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
                     logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
+                    //pushAlertThrough();
                     channelExport.isFullMirthExportCheck("YES");
                     
                     //String host = Main.returnHost();
@@ -782,7 +792,7 @@ public class applicationWindow extends JFrame implements ActionListener
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            JOptionPane.showMessageDialog(labelVersion, "Exporting Mirth Configurations will include:\n\n1. Channel exports WITHOUT CodeTemplate Libraries\n2. Complete CodeTemplate Library exports\n3. 1 full Mirth Configuration XML file\n\nTIP: Run an 'EXPORT CHANNELS' with code templates after the 'EXPORT MIRTH CONFIG'\n        for a complete exported Mirth database backup");
+            JOptionPane.showMessageDialog(labelVersion, "Exporting Mirth Configurations will include:\n\n1. Channel exports WITHOUT CodeTemplate Libraries\n2. Complete CodeTemplate Library exports\n3. 1 full Mirth Configuration XML file");
         }
     }
 
@@ -906,7 +916,7 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby"};
+            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens"};
                 int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, null, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
@@ -1108,7 +1118,15 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	if(themeName != "startedApp")
     	{
-    		logCommands.exportToLog("THEME CHANGED: -" + themeName);
+    		if(readThemeFromConfigFile == true)
+    		{
+    			readThemeFromConfigFile = false;
+    		}
+    		else
+    		{
+    			logCommands.exportToLog("THEME CHANGED: -" + themeName);
+    		}    		
+    		writeConfigFile(themeName);
     	}
     	    	
     	if(chosenTheme == 0)
@@ -1341,6 +1359,44 @@ public class applicationWindow extends JFrame implements ActionListener
     		moreFunctions.setForeground(Color.BLACK);
     		moreFunctions.setBackground(Color.WHITE);
     	}
+    	else if(chosenTheme == 6)
+    	{
+    		//Ravens theme    		
+    		logTextArea.setBackground(new java.awt.Color(36, 16, 117));
+    		logTextArea.setForeground(Color.WHITE);
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(26, 25, 95));
+    		middleButtonPanel.setBackground(new java.awt.Color(26, 25, 95));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(26, 25, 95));
+    		bottomButtonPanel.setBackground(new java.awt.Color(26, 25, 95));
+    		westPanel.setBackground(new java.awt.Color(26, 25, 95));
+    		centerPanel.setBackground(new java.awt.Color(188, 148, 40));
+    		imagePanel.setBackground(new java.awt.Color(26, 25, 95));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.BLACK);
+    		archiveChannels.setBackground(Color.WHITE);
+
+    		fullMirthExport.setForeground(Color.BLACK);
+    		fullMirthExport.setBackground(Color.WHITE);
+
+    		checkUsernameButton.setForeground(Color.BLACK);
+    		checkUsernameButton.setBackground(new java.awt.Color(188, 148, 40));
+
+    		changeUNandPW.setForeground(Color.BLACK);
+    		changeUNandPW.setBackground(new java.awt.Color(188, 148, 40));
+
+    		changeBackupPath.setForeground(Color.WHITE);
+    		changeBackupPath.setBackground(Color.BLACK);
+
+    		changeMirthDirPath.setForeground(Color.WHITE);
+    		changeMirthDirPath.setBackground(Color.BLACK);
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(200, 3, 43));
+    	}
     	return "theme changed";
     }
     
@@ -1374,7 +1430,7 @@ public class applicationWindow extends JFrame implements ActionListener
         {
     		String serviceState = Main.checkMirthService();
     		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF" };
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN" };
     		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
             int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "Select action:\n===========", "MORE FEATURES", 0, 2, null, options, options[1]);
             if (additionalFeatureOption == 0)
@@ -1467,6 +1523,21 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             else if(additionalFeatureOption == 3)
             {
+            	Object[] secondOptions = { "ENABLE", "DISABLE" };
+                int channelGenChoice = JOptionPane.showOptionDialog(labelVersion, "Mirth version 3.5 added a separate table containing pruning, enabled, and disabled\ninformation. In previous versions, that information was stored in the CHANNEL table.\nMCC generates backups differently for Mirth version <3.5.\n\nSelecting 'ENABLE' will use forcefully use the newer channel generation\nfor the full and channel backups.\n\nNOTE: Use only if channel or full generation fails on Mirth versions <=3.5", "ENABLE NEW CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (channelGenChoice < 0 || channelGenChoice == 1)
+                {
+                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: DISABLED");
+                	channelExport.setForceNewChannelGeneration(false);
+                }
+                else if (channelGenChoice == 0)
+                {
+                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: ENABLED");
+                	channelExport.setForceNewChannelGeneration(true);
+                }
+            }
+            else if(additionalFeatureOption == 4)
+            {
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
                 int repairChoice = JOptionPane.showOptionDialog(labelVersion, "A Lite Channel Export entails:\n1. The Mirth Service does not have to be stopped\n2. The Channel Export will not have any metadata (pruning settings, enable/disabled, etc.)\n3. Exports Code Template libraries", "PERFORM LITE CHANNEL EXPORT?", 0, 2, null, secondOptions, secondOptions[1]);
                 if (repairChoice < 0 || repairChoice == 1)
@@ -1494,13 +1565,108 @@ public class applicationWindow extends JFrame implements ActionListener
                     setLogWindow();
                 	Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
                 }
-            }
+            }            
             else if(additionalFeatureOption < 0)
             {
                 System.out.println("CANCELLED");
                 logCommands.exportToLog("No additional function chosen");
             }               		
         }
+    }
+    
+    //added in 2.2.4 - checks the running directory for any MCC configuration files, then applies the settings
+    public static String checkForConfigFile()
+    {
+    	String currentDir = getCurrentDir();
+    	
+    	File mccConfig = new File(currentDir, "MCC-Settings.config");
+    	if(mccConfig.exists())
+    	{
+    		System.out.println("MCC-Settings.config file detected");
+    		applySettingsFromConfigFile(currentDir);
+    	}
+    	else
+    	{
+    		System.out.println("No MCC-Settings.config file detected");
+    	}
+    	
+    	return currentDir;
+    }
+    
+    public static String getCurrentDir()
+    {
+    	String currentDir = System.getProperty("user.dir");
+    	System.out.println("Current dir hosting MCC.jar: " + currentDir);
+    	
+    	return currentDir;
+    }
+    
+    public static String applySettingsFromConfigFile(String currentDir)
+    {    	
+    	File mccConfig = new File(currentDir, "MCC-Settings.config");
+    	if(mccConfig.exists())
+    	{
+    		Path mccFile = Paths.get(currentDir + "\\MCC-Settings.config");
+            try 
+            {
+                BufferedReader reader = Files.newBufferedReader(mccFile);
+                String line;
+
+                while ((line = reader.readLine()) != null) 
+                {
+                	if(line.contains("Theme: "))
+                	{
+                		String targetTheme = line.replace("Theme: ", "");
+                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS"};
+                		for(int mythemes=0;mythemes<themes.length;mythemes++)
+                		{
+                			if(targetTheme.equals(themes[mythemes]))
+                			{
+                				readThemeFromConfigFile = true;
+                				changeTheme(mythemes, themes[mythemes]);
+                			}
+                		}
+                	}
+                }
+                reader.close();
+            } 
+            catch (IOException e) 
+            {
+                e.printStackTrace();
+            }
+    	}
+    	else
+    	{
+    		System.out.println("File is not accessible or corrupt. No action taken");
+    	}
+    	
+    	return currentDir;
+    }
+    
+    public static String writeConfigFile(String themeName)
+    {
+    	Path mccFile = Paths.get(getCurrentDir()+"\\MCC-Settings.config");
+    	    	
+    	String textToWrite = "# *************************************************************************\n# ***              DO NOT TOUCH OR EDIT THIS FILE!                      ***\n# *************************************************************************\nTheme: " + themeName.toUpperCase();
+    	
+    	try 
+    	{
+            //If the file exists, it will overwrite the content
+            Files.write(mccFile, textToWrite.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            System.out.println("Config file written successfully!");
+        } 
+    	catch (IOException e) 
+    	{
+            e.printStackTrace();
+        }
+    	
+    	return "file written";
+    }
+    
+    public static String pushAlertThrough()
+    {
+    	logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
+    	return "pushed";
     }
     
 }

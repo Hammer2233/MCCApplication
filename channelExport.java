@@ -44,6 +44,10 @@ public class channelExport
     private static boolean isFullMirthExport = false;
 
     private static String backupFolderPath = Main.getBackupFolder();
+    
+    //added in 2.2.4 to properly generate channels if Mirth version is less than 3.5
+    private static boolean skipCMD = false;
+    private static boolean forceNewChannelGeneration = false;
 
     public static boolean includeCodeTemplates(String yesNo)
     {
@@ -92,6 +96,30 @@ public class channelExport
     	sftpConnectedChannels.clear();
     	sftpRestartSplit.clear();
     	sftpChannelNames = "";
+    	
+    	//evaluates Mirth version to account for pre Mirth 3.5.0 channel generation
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");;
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
+    	{
+    		System.out.println("Mirth database version is less than 3.5");
+    		if(forceNewChannelGeneration == true)
+    		{
+    			System.out.println("User chose to use newer channel generation type");
+    			skipCMD = false;
+    		}
+    		else
+    		{
+    			skipCMD = true;
+    		}    		
+    	}
+    	else
+    	{
+    		System.out.println("Mirth database version is 3.5 or higher");
+    		skipCMD = false;
+    	}
+    	
     	
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
 		{
@@ -243,7 +271,7 @@ public class channelExport
             	{
             		for(int jk=0;jk<channelIDs.size();jk++)
             		{
-            			if(channelMetadata.get(jk).toString().contains(channelIDs.get(cm).toString()))
+            			if(skipCMD == false && channelMetadata.get(jk).toString().contains(channelIDs.get(cm).toString()))
             			{
             				String[] editCMD = channelMetadata.get(jk).toString().split("\n");
             				for(int po=0;po<editCMD.length;po++)
@@ -302,7 +330,15 @@ public class channelExport
                 	{
                 		channelXMLOutput += codeTemplateLibrary_XML.get(hi);
                 	}
-            		channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
+                	System.out.println("skipCMD: " + skipCMD);
+                	if(skipCMD == false)
+                	{
+                		channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
+                	}
+                	else
+                	{
+                		channelXMLOutput += "</codeTemplateLibraries>\n";
+                	}            		
             	}
             	else
             	{
@@ -313,7 +349,8 @@ public class channelExport
             {
             	//below checks if this is a new SFTP channel generation. If so, it will skip adding the exportdata tag
             	//if it is not a new generation (aka, SFTP restart was already in the DB), then it will add the tag
-            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	//added skip to exportdata if Mirth version is <3.5            	
+            	if(skipCMD == false && !channelNames.get(cm).equals("SFTP Restart Channel") || skipCMD == false && generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
             	{
             		channelXMLOutput += "</exportData>\n";
             	}
@@ -654,5 +691,12 @@ public class channelExport
     public static boolean allowSFTPGeneration()
     {
     	return sftpGenChoice;
+    }
+    
+    public static boolean setForceNewChannelGeneration(boolean choice)
+    {
+    	System.out.println("Mirth will use the new channel generation: " + choice);
+    	forceNewChannelGeneration = choice;
+    	return forceNewChannelGeneration;
     }
 }
