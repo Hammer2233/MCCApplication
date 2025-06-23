@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.3
-Last Update: 6/17/25
+Current Version: 2.2.4
+Last Update: 6/23/25
 =================================
 
 Version 2.1.0:
@@ -31,3 +31,8 @@ Version 2.2.3:
 -Added command to fully wipe and delete the full, code template, and channel folders between exports. Avoids issues if initial backup from 1 database is ran, then databases are switched, and a second backup is ran
 -Fixed bug and added additional check when generating the SFTP Restart Channel. Bug was not checking if the SFTP Restart Channel id was in the current arraylist. If so, then do not generate the channel
 -Fixed popups from MCC to snap to the application, rather than the center of the screen
+
+Version 2.2.4:
+-Added feature where MCC will remember the last theme, and will load it on subsequent launches
+-Fixed channel generation for Mirth channels and full configurations for Mirth versions <3.5. Changes include not adding "exportData" tags to the channel generation
+-Added option under "MORE FUNCTIONS" to toggle the old (pre Mirth 3.5) channel generation and new (Mirth version >3.5) channel generation

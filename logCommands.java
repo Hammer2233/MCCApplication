@@ -21,7 +21,7 @@ public class logCommands
     {
         //This will call for the current date and time. The log file will be created if it doesn't exist and a "session start" indicator will print
         String currentDate = getDateTime();
-        logThis = new PrintWriter(new FileOutputStream(new File("MCC-BETA.log"), true));
+        logThis = new PrintWriter(new FileOutputStream(new File("MCC-TRACE.log"), true));
         logThis.print(currentDate+" -Log Established-\n");
         activeSessionLog.add(currentDate+ " -Log Established-\n");
         logThis.flush();
