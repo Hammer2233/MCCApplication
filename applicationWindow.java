@@ -1432,7 +1432,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN" };
     		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
-            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "Select action:\n===========", "MORE FEATURES", 0, 2, null, options, options[1]);
+            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                     Select action:\n                                                                                 ===============", "MORE FEATURES", 0, 2, null, options, options[1]);
             if (additionalFeatureOption == 0)
             {
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
@@ -1524,8 +1524,8 @@ public class applicationWindow extends JFrame implements ActionListener
             else if(additionalFeatureOption == 3)
             {
             	Object[] secondOptions = { "ENABLE", "DISABLE" };
-                int channelGenChoice = JOptionPane.showOptionDialog(labelVersion, "Mirth version 3.5 added a separate table containing pruning, enabled, and disabled\ninformation. In previous versions, that information was stored in the CHANNEL table.\nMCC generates backups differently for Mirth version <3.5.\n\nSelecting 'ENABLE' will use forcefully use the newer channel generation\nfor the full and channel backups.\n\nNOTE: Use only if channel or full generation fails on Mirth versions <=3.5", "ENABLE NEW CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
-                if (channelGenChoice < 0 || channelGenChoice == 1)
+                int channelGenChoice = JOptionPane.showOptionDialog(labelVersion, "Mirth version 3.5 added a separate table containing pruning, enabled, and disabled\ninformation. In previous versions, that information was stored in the CHANNEL table.\nMCC generates backups differently for Mirth version <3.5.\n\nSelecting 'ENABLE' will forcefully use the newer channel generation\nfor the full and channel backups.\nSelecting 'DISABLE' will use the appropriate generation logic\nfor the Mirth version that's detected.\n\nNOTE: Use only if channel or full generation fails on Mirth versions <=3.5\naka: channel/full backup folder is empty, XML files don't open properly, etc.", "ENABLE NEW CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (channelGenChoice == 1)
                 {
                 	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: DISABLED");
                 	channelExport.setForceNewChannelGeneration(false);
@@ -1534,6 +1534,10 @@ public class applicationWindow extends JFrame implements ActionListener
                 {
                 	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: ENABLED");
                 	channelExport.setForceNewChannelGeneration(true);
+                }
+                else if(channelGenChoice < 0)
+                {
+                	logCommands.exportToLog("CHANNEL GENERATION CHOICE: No action taken");
                 }
             }
             else if(additionalFeatureOption == 4)
