@@ -2,7 +2,7 @@
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
 Current Version: 2.2.4
-Last Update: 6/23/25
+Last Update: 6/24/25
 =================================
 
 Version 2.1.0:
@@ -36,3 +36,5 @@ Version 2.2.4:
 -Added feature where MCC will remember the last theme, and will load it on subsequent launches
 -Fixed channel generation for Mirth channels and full configurations for Mirth versions <3.5. Changes include not adding "exportData" tags to the channel generation
 -Added option under "MORE FUNCTIONS" to toggle the old (pre Mirth 3.5) channel generation and new (Mirth version >3.5) channel generation
+-Fixed the DATABASE OVERVIEW report generation on Mirth versions <3.5 to properly display channels and their status
+-Fixed REPAIR CORRUPT DB logic to not copy all items from the archived log folder. Instead it targets "new" database files, allowing Mirth to rebuild them on the next db start/query
