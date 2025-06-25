@@ -699,4 +699,20 @@ public class channelExport
     	forceNewChannelGeneration = choice;
     	return forceNewChannelGeneration;
     }
+    
+    public static boolean getForceNewChannelGeneration()
+    {
+    	return forceNewChannelGeneration;
+    }
+    
+    public static boolean setSkipCMD(boolean setter)
+    {
+    	skipCMD = setter;
+    	return skipCMD;
+    }
+    
+    public static boolean getSkipCMD()
+    {
+    	return skipCMD;
+    }
 }

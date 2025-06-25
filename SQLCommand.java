@@ -535,11 +535,42 @@ public class SQLCommand
             	
             	if(serviceCheck == "STOPPED")
     			{
-            		channelStatusBuilder(host);
-    				for(int e=0;e<channelNameList.size();e++)
-    				{
-        				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
-    				}
+            		//evaluates Mirth version to account for pre Mirth 3.5.0 channel generation
+                	String currMirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");;
+                	String[] splitVersion = currMirthVersion.split("\\.");
+                	
+            		if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
+                	{
+                		System.out.println("Mirth database version is less than 3.5");
+                		if(channelExport.getForceNewChannelGeneration() == true)
+                		{
+                			//generated if Mirth version is <3.5 and choice to use the new generation was chosen under MORE FUNCTIONS
+                    		channelStatusBuilder(host);
+            				for(int e=0;e<channelNameList.size();e++)
+            				{
+                				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+            				}
+                		}
+                		else
+                		{
+                			//generation for Mirth versions <3.5
+                			channelStatusBuilderOLD(host);
+                    		System.out.println("channelNameList size: " + channelNameList.size());
+            				for(int e=0;e<channelNameList.size();e++)
+            				{
+                				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+            				}
+                		}    		
+                	}
+                	else
+                	{
+                		//generated for Mirth versions >=3.5
+                		channelStatusBuilder(host);
+        				for(int e=0;e<channelNameList.size();e++)
+        				{
+            				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+        				}
+                	}  
     			}            	
             	
             	//User list
@@ -679,6 +710,65 @@ public class SQLCommand
             conn.close();
         }
         catch (Exception e) 
+        {
+            e.printStackTrace();
+        }
+    	return "Arrays Built";
+    }
+    
+    private static String channelStatusBuilderOLD(String host)
+    {
+    	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+    		String query = "SELECT NAME, CHANNEL FROM CHANNEL ORDER BY NAME";
+    		
+    		ResultSet rs = stmt.executeQuery(query);
+    		try
+            { 
+                while (rs.next()) 
+                {      
+                	boolean detectedChannelStatus = false;
+                	String channelName = "";
+        			String channelXML = "";
+                	
+                    //adds channel name to arrays
+                	channelName = rs.getString(1);     
+                	channelXML = rs.getString(2);
+                	
+                	channelNameList.add(channelName);
+                	
+                    String[] splitChannel = channelXML.split("\n");
+                    while(detectedChannelStatus == false)
+                    {
+                    	for(int c=0;c<splitChannel.length;c++)
+                        {
+                        	String line = splitChannel[c];
+                        	if(line.contains("enabled"))
+                        	{
+                        		String enabledState = line.replace("<enabled>", "").replace("</enabled>", "").trim();
+                        		if(enabledState.equals("true"))
+                        		{
+                        			channelStatusList.add("[ACTIVE]");
+                        		}
+                        		else
+                        		{
+                        			channelStatusList.add("[DISABLED]");
+                        		}   
+                        		c = (splitChannel.length + 1);
+                        		detectedChannelStatus = true;
+                        	}
+                        } 
+                    }
+                }                
+                conn.close();
+            } 
+            catch (SQLException sqlExcept) 
+            {
+                System.out.println("FAILED MISERABLY");
+                System.out.println(sqlExcept);
+            }
+        } 
+    	catch (Exception e) 
         {
             e.printStackTrace();
         }
