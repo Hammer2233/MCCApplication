@@ -3,6 +3,7 @@ import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import java.io.BufferedReader;
@@ -318,44 +319,42 @@ public class Main
         	System.out.println("BEGINNING COPY SEQUENCE");
         	//recreates the log folder
             dir.mkdirs();
-            
-//            File file = new File("");
-//            try 
-//            {
-//            	String[] manualLogFiles = { "log.ctrl", "log1.dat", "logmirror.ctrl", "README_DO_NOT_TOUCH_FILES.txt" };
-//            	for (String logFile : manualLogFiles) 
-//            	{
-//            		file = new File(newlogFolder + "\\log\\" + logFile);
-//            		Files.copy(path.getClass().getResourceAsStream("/log/" + logFile), file.getAbsoluteFile().toPath(), new java.nio.file.CopyOption[0]);
-//            	} 
-//            } 
-//            catch (IOException ex) 
-//            {
-//              System.out.println("ERROR: " + ex);
-//            }
         	
-            
-            //copies all files in the backup log folder to the new folder
+            /* logic updated in MCC 2.2.4
+             * Found out that if you copy all of the files in the archived log folder, the database remains corrupt
+             * You need to only copy out the "log.ctrl", "log1.dat", "logmirror.ctrl", "README_DO_NOT_TOUCH_FILES.txt"
+             * Those files will be remade when the Mirth services starts or the DB is queried again
+             * */
+           
+            //copies all necessary files in the backup log folder to the new folder
             for(int i=0;i<logFiles.size();i++)
             {
-            	System.out.println("Log File: " + logFiles.get(i));
-            	File source = new File(newlogFolder+"\\"+logFiles.get(i));
-            	File destination = new File(path+"\\"+logFiles.get(i));
-            	
-            	System.out.println("SOURCE: " + source);
-            	System.out.println("DESTINATION: " + destination);
-            	
-            	try
-            	{
-            		Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            		logCommands.exportToLog("FILE- '" + logFiles.get(i) + "' COPIED TO '" + destination + "'");
-            	} 
-            	catch (IOException e) 
-            	{
-            		logCommands.exportToLog("ERROR: UNABLE TO COPY '" + logFiles.get(i) + "'");
-            	    e.printStackTrace();
-            	}            	
+            	String[] manualLogFiles = { "log.ctrl", "log1.dat", "logmirror.ctrl", "README_DO_NOT_TOUCH_FILES.txt" };
+            	for(int checkLogs=0;checkLogs<manualLogFiles.length;checkLogs++)
+            	{            		
+            		if(manualLogFiles[checkLogs].toString().equals(logFiles.get(i).toString()))
+            		{
+            			System.out.println("Copying this log file: " + logFiles.get(i));
+                    	File source = new File(newlogFolder+"\\"+logFiles.get(i));
+                    	File destination = new File(path+"\\"+logFiles.get(i));
+                    	
+                    	System.out.println("SOURCE: " + source);
+                    	System.out.println("DESTINATION: " + destination);
+                    	
+                    	try
+                    	{
+                    		Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    		logCommands.exportToLog("FILE- '" + logFiles.get(i) + "' COPIED TO '" + destination + "'");
+                    	} 
+                    	catch (IOException e) 
+                    	{
+                    		logCommands.exportToLog("ERROR: UNABLE TO COPY '" + logFiles.get(i) + "'");
+                    	    e.printStackTrace();
+                    	}  
+            		}
+            	}            	          	
             }
+            logCommands.exportToLog("DATABASE REPAIR FINISHED");
         }       
     	
     	return "repair ran";
