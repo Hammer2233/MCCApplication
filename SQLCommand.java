@@ -64,6 +64,8 @@ public class SQLCommand
         catch (Exception e) 
         {
             e.printStackTrace();
+            logCommands.exportToLog("ERROR: " + e);
+			logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
         }
         
         if(currentUn == "")

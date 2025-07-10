@@ -91,19 +91,44 @@ public class Main
     		} 
     	}
     	
+    	/**
+    	 * Changed in Mirth 2.2.4 to make the following checks
+    	 * 1. See if appdata folder contains the mirthdb folder
+    	 * 2. If not, then remove appdata from the dbpath and check if the main db folder houses the mirthdb folder
+    	 */  
+    	
+    	String[] filesToCheck = { dbPath+"appdata", dbPath+"appdata\\mirthdb" };
+    	
     	//This following section of code determines the subfolder for the DB filepath
     	//It checks to see if the "appdata" folder exists. If not it connects right to "mirthdb"
-    	File dbSubPath = new File(dbPath+"appdata");
-    	if(dbSubPath.exists())
+    	for(int check=0;check<filesToCheck.length;check++)
     	{
-    		dbSubfolder = "appdata\\mirthdb;";
-    		fullDBPath = fullDBPath + dbPath + dbSubfolder;
-    	}
-    	else
-    	{
-    		dbSubfolder = "mirthdb";
-    		fullDBPath = fullDBPath + dbPath + dbSubfolder;
-    	}
+    		File dbSubPath = new File(filesToCheck[check]);
+        	if(dbSubPath.exists())
+        	{
+        		check++;
+        		File appdataCheck = new File(filesToCheck[check]);
+        		if(appdataCheck.exists())
+            	{
+        			System.out.println("Mirth DB is housed in the appdata folder");
+            		dbSubfolder = "appdata\\mirthdb;";
+            		fullDBPath = fullDBPath + dbPath + dbSubfolder;
+            	}
+            	else
+            	{
+            		System.out.println("Mirth DB NOT housed in the appdata folder");
+            		dbSubfolder = "mirthdb";
+            		fullDBPath = fullDBPath + dbPath + dbSubfolder;
+            	}
+        	}
+        	else
+        	{
+        		System.out.println("Mirth DB NOT housed in the appdata folder");
+        		dbSubfolder = "mirthdb";
+        		fullDBPath = fullDBPath + dbPath + dbSubfolder;        		
+        	}
+        	check=2;
+    	}    	
     	System.out.println("Full DB Path: " + fullDBPath);
     }
 
