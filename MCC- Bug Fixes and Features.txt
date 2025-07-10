@@ -2,7 +2,7 @@
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
 Current Version: 2.2.4
-Last Update: 6/24/25
+Last Update: 7/10/25
 =================================
 
 Version 2.1.0:
@@ -38,3 +38,4 @@ Version 2.2.4:
 -Added option under "MORE FUNCTIONS" to toggle the old (pre Mirth 3.5) channel generation and new (Mirth version >3.5) channel generation
 -Fixed the DATABASE OVERVIEW report generation on Mirth versions <3.5 to properly display channels and their status
 -Fixed REPAIR CORRUPT DB logic to not copy all items from the archived log folder. Instead it targets "new" database files, allowing Mirth to rebuild them on the next db start/query
+-Fixed database folder detection logic. Corrected issue where 'mirthdb' folder was not in the 'appdata' folder, but an 'appdata' folder was present in the Mirth install folder. New logic checks if 'mirthdb' exists in the 'appdata' folder, if not then default to main install folder
