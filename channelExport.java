@@ -151,6 +151,11 @@ public class channelExport
 		}
 		catch (Exception e) 
 		{
+			if(e.toString().contains("not found"))
+			{
+				logCommands.exportToLog("ERROR: " + e);
+				logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
+			}
 		  e.printStackTrace();
 		}
 		return "channels exported";
@@ -437,6 +442,12 @@ public class channelExport
     		}
     		catch (Exception e) 
     		{
+    			if(e.toString().contains("CODE_TEMPLATE_LIBRARY"))
+    			{
+    				System.out.println("Error: " + e);
+    				logCommands.exportToLog("Error: java.sql.SQLSyntaxErrorException: Table/View 'CODE_TEMPLATE_LIBRARY' does not exist.");
+    				logCommands.exportToLog("Unable to properly export Code Template Libraries. The full/channel(s) export likely has generated without issue. Please open the XML file(s) to confirm");
+    			}
     			e.printStackTrace();
     		}
     		queryCount++;
