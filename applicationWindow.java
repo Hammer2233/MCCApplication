@@ -29,6 +29,7 @@ import java.util.Date;
 import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.GridBagConstraints;
 
@@ -80,7 +81,7 @@ public class applicationWindow extends JFrame implements ActionListener
     private static JPasswordField commandPWSpace;
     private JButton runCommand;
     private static JLabel cmdPWLabel;
-    private ImageIcon iconImg = null;
+    private static ImageIcon iconImg = null;
     
     private static boolean toggleEnabled = false;
     private static boolean readThemeFromConfigFile = false;
@@ -110,7 +111,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.4");
+        setTitle("MCC -2.2.5");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -225,6 +226,7 @@ public class applicationWindow extends JFrame implements ActionListener
         JLabel label = new JLabel();
         label.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/MCC-logo.png")).getImage().getScaledInstance(215, 100, Image.SCALE_DEFAULT)));
         
+        iconImg = new ImageIcon(getClass().getResource("/MCC-Icon.png"));
 		ImageIcon icon = new ImageIcon(getClass().getResource("/MCC-Icon.png"));
 		setIconImage(icon.getImage());
         
@@ -792,7 +794,7 @@ public class applicationWindow extends JFrame implements ActionListener
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            JOptionPane.showMessageDialog(labelVersion, "Exporting Mirth Configurations will include:\n\n1. Channel exports WITHOUT CodeTemplate Libraries\n2. Complete CodeTemplate Library exports\n3. 1 full Mirth Configuration XML file");
+            JOptionPane.showMessageDialog(labelVersion, "Exporting Mirth Configurations will include:\n\n1. Channel exports WITHOUT CodeTemplate Libraries\n2. Complete CodeTemplate Library exports\n3. 1 full Mirth Configuration XML file\n4. (If present) A copy of the 'mirth.properties' file \n     from the appdata folder");
         }
     }
 
@@ -917,7 +919,7 @@ public class applicationWindow extends JFrame implements ActionListener
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
             	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens"};
-                int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, null, options, options[1]);
+                int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
                 	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
@@ -1430,9 +1432,9 @@ public class applicationWindow extends JFrame implements ActionListener
         {
     		String serviceState = Main.checkMirthService();
     		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN" };
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE" };    		   		
     		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
-            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                     Select action:\n                                                                                 ===============", "MORE FEATURES", 0, 2, null, options, options[1]);
+            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                                                 Select action:\n                                                                                                             ===============", "MORE FEATURES", 0, 2, iconImg, options, options[1]);
             if (additionalFeatureOption == 0)
             {
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
@@ -1542,6 +1544,59 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             else if(additionalFeatureOption == 4)
             {
+            	//added in 2.2.5
+            	Object[] secondOptions = { "CONTINUE", "CANCEL" };
+                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "Useful to run when you're unable to run the Mirth Admin Launcher.\nOften required when getting 'payload retrieval' errors.\n\nThis command will rename the current 'keystore.jks' file in the appdata folder.\nRestart the service to create a new 'keystore.jks' file\n\nNOTE: Ensure you have ran MCC.jar as admin via the batch file", "REPAIR KEYSTORE?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (repairChoice < 0 || repairChoice == 1)
+                {
+                	logCommands.exportToLog("KEYSTORE REPAIR CANCELLED. No action was taken");
+                }
+                else if (repairChoice == 0)
+                {
+                	//added in 2.2.3
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
+                	{
+                		logCommands.exportToLog("Keystore repair confirmed. Running...");
+                		String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
+                    	System.out.println("DB log To Repair: " + appdataPath);
+                    	
+                    	Main.repairKeystoreFile(appdataPath);     
+                	}
+                	else
+                	{
+                		if(serviceState == "STOPPED")
+                    	{
+                    		logCommands.exportToLog("Keystore repair confirmed. Running...");
+                        	String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
+                        	File keystoreFile = new File(appdataPath + "\\keystore.jks");
+                        	if(keystoreFile.exists())
+                        	{
+                        		System.out.println("Keystore File Detected");
+                        		System.out.println("Keystore To Repair: " + appdataPath + "keystore.jks");
+                        		Main.repairKeystoreFile(appdataPath);
+                        	}   
+                        	else
+                        	{
+                        		logCommands.exportToLog("Either the 'appdata' folder or the 'keystore.jks' file was not detected. No action performed");
+                        	}
+                        	                    	
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	} 
+                }
+            }
+            else if(additionalFeatureOption == 5)
+            {
+            	//currently un-used as of 2.2.5
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
                 int repairChoice = JOptionPane.showOptionDialog(labelVersion, "A Lite Channel Export entails:\n1. The Mirth Service does not have to be stopped\n2. The Channel Export will not have any metadata (pruning settings, enable/disabled, etc.)\n3. Exports Code Template libraries", "PERFORM LITE CHANNEL EXPORT?", 0, 2, null, secondOptions, secondOptions[1]);
                 if (repairChoice < 0 || repairChoice == 1)
@@ -1569,7 +1624,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     setLogWindow();
                 	Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
                 }
-            }            
+            }
             else if(additionalFeatureOption < 0)
             {
                 System.out.println("CANCELLED");
@@ -1671,6 +1726,5 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
     	return "pushed";
-    }
-    
+    }    
 }
