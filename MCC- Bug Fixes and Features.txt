@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.4
-Last Update: 7/10/25
+Current Version: 2.2.5
+Last Update: 7/23/25
 =================================
 
 Version 2.1.0:
@@ -39,3 +39,7 @@ Version 2.2.4:
 -Fixed the DATABASE OVERVIEW report generation on Mirth versions <3.5 to properly display channels and their status
 -Fixed REPAIR CORRUPT DB logic to not copy all items from the archived log folder. Instead it targets "new" database files, allowing Mirth to rebuild them on the next db start/query
 -Fixed database folder detection logic. Corrected issue where 'mirthdb' folder was not in the 'appdata' folder, but an 'appdata' folder was present in the Mirth install folder. New logic checks if 'mirthdb' exists in the 'appdata' folder, if not then default to main install folder
+
+Version 2.2.5:
+-Added the 'mirth.properties' file to the list of files backed up when using the "EXPORT MIRTH CONFIG" option. Archived to the "fullMirthExport" folder
+-Added option under "MORE FUNCTIONS" to repair the keystore.jks file. This can fix "payload retrieval" errors when unsuccessfully attempting to launch the Mirth Admin Launcher

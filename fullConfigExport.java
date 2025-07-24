@@ -1,7 +1,9 @@
 package main;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -413,6 +415,26 @@ public class fullConfigExport
         channelGroup_XML.clear();
 
         logCommands.exportToLog("EXPORTED - Server settings");
+        
+        //added in 2.2.5 - Grabs a copy of the mirth.properties file from the "C:\Program Files\Mirth Connect\conf" folder path
+        String propertiesFilePath = host.trim().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "").replace("appdata", "") + "conf\\mirth.properties";
+        System.out.println("TARGET PROPERTIES FILE: " + propertiesFilePath);
+        File propertiesFile = new File(propertiesFilePath);
+        if(propertiesFile.exists())
+        {
+        	File copyPropertiesToFull = new File(backupFolderPath+"\\fullMirthExport\\mirth.properties");
+        	try 
+        	{
+        		Files.copy(propertiesFile.toPath(), copyPropertiesToFull.toPath());
+        		logCommands.exportToLog("'mirth.properties' file backed up to " + backupFolderPath+"\\fullMirthExport\\");
+			} 
+        	catch (IOException e) 
+        	{
+				e.printStackTrace();
+				logCommands.exportToLog("ERROR: " + e);
+			}
+        }
+        
         return "created serverSettings";
     }
 

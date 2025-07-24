@@ -385,11 +385,38 @@ public class Main
     	return "repair ran";
     }
     
+    public static String repairKeystoreFile(String path)
+    {
+    	File dir = new File(path+"\\keystore.jks");
+    	//renames the keystore file    	
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss-SSS");
+        Date currentDate = new Date();
+        String oldKeystoreFile = path + "\\keystore_BACKUP_" + dateFormat.format(currentDate) + ".jks";
+        
+        File oldDir = new File(path+"\\keystore.jks");
+        File newDir = new File(oldKeystoreFile);
+        boolean wasRenamed = false;
+        try 
+        {
+        	Files.move(dir.toPath(), newDir.toPath(), new java.nio.file.CopyOption[0]);
+        	logCommands.exportToLog("Renamed Keystore to: '" + oldKeystoreFile + "'");
+        	wasRenamed = true;
+        } 
+        catch (IOException ex) 
+        {
+        	logCommands.exportToLog("Failed to rename Keystore file. Error: " + ex.toString());
+        	if(ex.toString().contains("AccessDeniedException"))
+        	{
+        		logCommands.exportToLog("'AccessDeniedException' is often thrown with permission errors. Please run MCC.jar via the batch file and try again");
+        	}
+        }
+        
+    	return "Keystore repair ran";
+    }
+    
     public static boolean changedDirTF()
     {
     	return changedMirthDBDirPath;
     }
 
 }
-
-
