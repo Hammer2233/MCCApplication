@@ -48,6 +48,9 @@ public class channelExport
     //added in 2.2.4 to properly generate channels if Mirth version is less than 3.5
     private static boolean skipCMD = false;
     private static boolean forceNewChannelGeneration = false;
+    
+    //added in 2.2.5 to store the active channel names
+    private static ArrayList activeChannelNames = new ArrayList();
 
     public static boolean includeCodeTemplates(String yesNo)
     {
@@ -96,6 +99,7 @@ public class channelExport
     	sftpConnectedChannels.clear();
     	sftpRestartSplit.clear();
     	sftpChannelNames = "";
+    	activeChannelNames.clear();
     	
     	//evaluates Mirth version to account for pre Mirth 3.5.0 channel generation
     	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");;
@@ -120,6 +124,19 @@ public class channelExport
     		skipCMD = false;
     	}
     	
+    	//added in 2.2.5 - This grabs a list of all active channels used in evaluation for the SFTP Restart Channel addition    	
+        SQLCommand.channelStatusBuilder(host);
+        int numberOfChannels = SQLCommand.channelStatusListSize();
+        System.out.println("Total Channel Count: " + numberOfChannels);
+        for (int i = 0; i < numberOfChannels; i++) 
+        {
+            if (SQLCommand.returnChannelStatus(i).toString().equals("[ACTIVE]"))
+            {
+                activeChannelNames.add(SQLCommand.returnChannelName(i));
+                System.out.println("ACTIVE CHANNEL: " + SQLCommand.returnChannelName(i));
+            }
+        }
+        SQLCommand.clearArraysForActiveChannels();    	
     	
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
 		{
@@ -235,14 +252,7 @@ public class channelExport
          */
         boolean sftpCheck = true;
         for(int cm=0;cm<channelNames.size();cm++)
-        {        
-        	//new in 2.2.3 - Evaluating if an SFTP restart channel is needed
-        	if(cm == channelNames.size() -1 && sftpCheck == true)
-        	{                
-                sftpChannelBuilder(host);
-                sftpCheck = false;
-        	}
-        	
+        {          	
         	File currentChannelFile = new File(backupFolderPath+"channelBackup\\" + channelNames.get(cm)+".xml");
             try 
     		{
@@ -308,16 +318,23 @@ public class channelExport
             		{
             			String schemeType = line.replace("<scheme>", "").replace("</scheme>", "").toUpperCase().trim();
             			if(schemeType.contains("FTP"))
-            			{
-            				if(!sftpConnectedChannels.contains(channelNames.get(cm)))
+            			{   
+            				if(!sftpConnectedChannels.contains(channelNames.get(cm)) && activeChannelNames.contains(channelNames.get(cm))) //added activeChannelNames check in 2.2.5
             				{
+            					isSFTPChannelNeeded = true;
             					System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
-                				sftpConnectedChannels.add(channelNames.get(cm));
-                				isSFTPChannelNeeded = true;
+                				sftpConnectedChannels.add(channelNames.get(cm));                				
             				} 
             				else
             				{
-            					System.out.println("Dupe SFTP connection caught for channel '" + channelNames.get(cm) + "'");
+            					if(!activeChannelNames.contains(channelNames.get(cm)))
+            					{
+            						System.out.println("Inactive channel using SFTP connection caught for '" + channelNames.get(cm) + "'");
+            					}
+            					else
+            					{
+            						System.out.println("Dupe SFTP connection caught for channel '" + channelNames.get(cm) + "'");
+            					}            					
             				}
             			}
             		}
@@ -375,11 +392,16 @@ public class channelExport
             
             //replaces the rawChannelCLOB with the new result
             rawChannelCLOB.set(cm, channelXMLOutput);
+            
+            //new in 2.2.3 - Evaluating if an SFTP restart channel is needed
+            //changed location in the loop to be at the bottom as it was skipping the last channel for the check
+        	if(cm == channelNames.size() -1 && sftpCheck == true)
+        	{ 
+                sftpChannelBuilder(host);
+                sftpCheck = false;
+        	}
         }                       
-        //END channelExport Appending        
-        
-//        //new in 2.2.3 - Evaluating if an SFTP restart channel is needed
-//        sftpChannelBuilder(host);
+        //END channelExport Appending      
         
         return "metaDataExported";
     }
@@ -599,6 +621,8 @@ public class channelExport
     		System.out.println("I am greater than/equal to Mirth version 3.10.0");
     		if(!channelNames.contains("SFTP Restart Channel") && !channelIDs.contains("07f073af-c1b5-43a1-be3b-6d211f08cabb"))
     		{
+    			System.out.println("isSFTPChannelNeeded: " + isSFTPChannelNeeded);
+				System.out.println("sftpGenChoice: " + sftpGenChoice);
     			if(isSFTPChannelNeeded == true && sftpGenChoice == true)
     			{
     				generateSFTPTag = true;
@@ -677,7 +701,7 @@ public class channelExport
     				else
     				{
     					System.out.println("No SFTP connection type was found. No need to create the channel");
-    				}    				
+    				}   				
     			}
     		}
     		else
