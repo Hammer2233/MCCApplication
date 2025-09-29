@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.5
-Last Update: 7/23/25
+Current Version: 2.2.6
+Last Update: 9/29/25
 =================================
 
 Version 2.1.0:
@@ -43,3 +43,10 @@ Version 2.2.4:
 Version 2.2.5:
 -Added the 'mirth.properties' file to the list of files backed up when using the "EXPORT MIRTH CONFIG" option. Archived to the "fullMirthExport" folder
 -Added option under "MORE FUNCTIONS" to repair the keystore.jks file. This can fix "payload retrieval" errors when unsuccessfully attempting to launch the Mirth Admin Launcher
+-Changed SFTP channel generation to only include active channels. If no active channels use an SFTP connection, the channel will not generate.
+-Fixed improper MCC package where MCC-SIDEKICK was not present in the package
+-Fixed bug in SFTP channel generation where the last channel's SFTP status was not being evaluated, causing the last channel (if it was SFTP) to be missed
+
+BETA Version 2.2.6:
+-Added new option under "MORE FUNCTIONS" to allow custom SQL searches and a message searching GUI
+-Added button to "CUSTOM SQL QUERY" to show a basic table structure of the Mirth database

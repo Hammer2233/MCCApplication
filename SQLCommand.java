@@ -629,7 +629,7 @@ public class SQLCommand
         return length;
     }
     
-    private static String channelStatusBuilder(String host)
+    public static String channelStatusBuilder(String host)
     {
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
@@ -714,6 +714,7 @@ public class SQLCommand
         catch (Exception e) 
         {
             e.printStackTrace();
+            logCommands.exportToLog("ERROR: Unable to load database connection. Please ensure that the service is stopped/no other apps are connected.");
         }
     	return "Arrays Built";
     }
@@ -775,6 +776,29 @@ public class SQLCommand
             e.printStackTrace();
         }
     	return "Arrays Built";
+    }
+    
+    public static int channelStatusListSize()
+    {
+    	return channelStatusList.size();
+    }
+    
+    public static String returnChannelName(int choice)
+    {
+    	return channelNameList.get(choice).toString();
+    }
+    
+    public static String returnChannelStatus(int choice)
+    {
+    	return channelStatusList.get(choice).toString();
+    }
+    
+    public static String clearArraysForActiveChannels()
+    {
+    	channelIDList.clear();
+		channelStatusList.clear();
+		channelNameList.clear();
+    	return "cleared";
     }
     
     public static String liteChannelExport(String host)

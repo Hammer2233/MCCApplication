@@ -816,7 +816,7 @@ public class applicationWindow extends JFrame implements ActionListener
         commandPWSpace.setText("");
 
         //events for each possible password/command
-        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme", "enablebackup", "tablesize"};
+        String[] validCommands = {getMCCPassword(), "lock", "changemirthpw", "theme", "enablebackup", "tablesize", "devlog"};
         for(int i=0;i<validCommands.length;i++)
         {
             if(captured.toLowerCase().equals(validCommands[i]) && i==0 && toggleEnabled == false)
@@ -1402,7 +1402,8 @@ public class applicationWindow extends JFrame implements ActionListener
     	return "theme changed";
     }
     
-    private static String killConnection(String host) 
+    //private static String killConnection(String host) 
+    static String killConnection(String host)
     {
         try 
         {
@@ -1432,7 +1433,7 @@ public class applicationWindow extends JFrame implements ActionListener
         {
     		String serviceState = Main.checkMirthService();
     		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE" };    		   		
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE"};    		   		
     		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
             int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                                                 Select action:\n                                                                                                             ===============", "MORE FEATURES", 0, 2, iconImg, options, options[1]);
             if (additionalFeatureOption == 0)
@@ -1595,6 +1596,69 @@ public class applicationWindow extends JFrame implements ActionListener
                 }
             }
             else if(additionalFeatureOption == 5)
+            {
+            	//added in 2.2.5
+            	Object[] secondOptions = { "SEARCH CHANNELS", "CUSTOM SQL QUERY", "CANCEL" };
+                int sqlChoice = JOptionPane.showOptionDialog(labelVersion, "Functionality to run SQL Queries against the \nMirth database. Useful for:\n1. Viewing messages when the GUI is down\n2. Gathering specific information from tables\n3. Viewing raw data", "LAUNCH SEARCH?", 0, 2, null, secondOptions, secondOptions[1]);
+                System.out.println("SQL Search Choice: " + sqlChoice);
+                if (sqlChoice < 0 || sqlChoice == 2)
+                {
+                	logCommands.exportToLog("SQL SEARCH CANCELLED. No action was taken");
+                }
+                else if (sqlChoice == 0)
+                {
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
+                	{
+                		new SQLSearch(0);   
+                	}
+                	else
+                	{
+                		if(serviceState == "STOPPED")
+                    	{
+                    		logCommands.exportToLog("Channel Message Search enabled. Running...");
+                    		new SQLSearch(0);
+                        	                    	
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	} 
+                }
+                else if (sqlChoice == 1)
+                {                	
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
+                	{
+                		new SQLSearch(1);   
+                	}
+                	else
+                	{
+                		if(serviceState == "STOPPED")
+                    	{
+                    		logCommands.exportToLog("SQL Search enabled. Running...");
+                    		new SQLSearch(1);
+                        	                    	
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	} 
+                }
+            }
+            else if(additionalFeatureOption == 6)
             {
             	//currently un-used as of 2.2.5
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
