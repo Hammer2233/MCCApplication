@@ -66,6 +66,7 @@ public class SQLCommand
             e.printStackTrace();
             logCommands.exportToLog("ERROR: " + e);
 			logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
+			Main.configPathReader();
         }
         
         if(currentUn == "")
@@ -604,6 +605,11 @@ public class SQLCommand
             logCommands.exportToLog("ERROR: " + e);
             logCommands.exportToLog("Error running DB information query.");
             dbInformationText = "ENCOUNTERED SQL ERROR\nReport did not generate successfully\n\nTry running with the Mirth Service stopped";
+            
+            if(e.toString().contains("Database") && e.toString().contains("not found"))
+            {
+            	Main.configPathReader();
+            }
         }
     	return dbInformationText;
     }
@@ -715,6 +721,11 @@ public class SQLCommand
         {
             e.printStackTrace();
             logCommands.exportToLog("ERROR: Unable to load database connection. Please ensure that the service is stopped/no other apps are connected.");
+            
+            if(e.toString().contains("Database") && e.toString().contains("not found"))
+            {
+            	Main.configPathReader();
+            }
         }
     	return "Arrays Built";
     }
@@ -774,6 +785,11 @@ public class SQLCommand
     	catch (Exception e) 
         {
             e.printStackTrace();
+            
+            if(e.toString().contains("Database") && e.toString().contains("not found"))
+            {
+            	Main.configPathReader();
+            }
         }
     	return "Arrays Built";
     }
@@ -831,6 +847,11 @@ public class SQLCommand
         catch (Exception e) 
         {
             e.printStackTrace();
+            
+            if(e.toString().contains("Database") && e.toString().contains("not found"))
+            {
+            	Main.configPathReader();
+            }
         }
         
         File channelFileDir = new File(backupFolderPath+"channelBackup\\");

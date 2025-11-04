@@ -111,7 +111,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.5");
+        setTitle("MCC -2.2.6");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -1126,7 +1126,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		}
     		else
     		{
-    			logCommands.exportToLog("THEME CHANGED: -" + themeName);
+    			logCommands.exportToLog("THEME LOADED: -" + themeName);
     		}    		
     		writeConfigFile(themeName);
     	}
@@ -1413,7 +1413,8 @@ public class applicationWindow extends JFrame implements ActionListener
         {
             if (e.getMessage().contains("shutdown")) 
             {
-                logCommands.exportToLog("Database connection shut down.");
+                //logCommands.exportToLog("Database connection shut down.");
+                logCommands.exportToLog("MCC's Connection to the Mirth Database was Shut Down Successfully.");
             } 
             else 
             {
@@ -1422,7 +1423,8 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             return "connection kill failed";
         }
-        logCommands.exportToLog("Database shut down successfully.");
+        //logCommands.exportToLog("Database shut down successfully.");
+        logCommands.exportToLog("MCC's Connection to the Mirth Database was shut down successfully.");
         return "connection killed";
     }
     
@@ -1433,7 +1435,7 @@ public class applicationWindow extends JFrame implements ActionListener
         {
     		String serviceState = Main.checkMirthService();
     		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE"};    		   		
+    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE", "SQL SEARCH"};    		   		
     		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
             int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                                                 Select action:\n                                                                                                             ===============", "MORE FEATURES", 0, 2, iconImg, options, options[1]);
             if (additionalFeatureOption == 0)
@@ -1760,7 +1762,8 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	else
     	{
-    		System.out.println("File is not accessible or corrupt. No action taken");
+    		System.out.println("File is not accessible or is corrupt. No action taken");
+    		logCommands.exportToLog("File is not accessible or is corrupt. No action taken");
     	}
     	
     	return currentDir;

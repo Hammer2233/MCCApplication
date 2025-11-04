@@ -93,30 +93,47 @@ public class SQLSearch extends JFrame
     private static ArrayList SEARCHresponseDates = new ArrayList();
     
     private static ArrayList SEARCHimportantIDs = new ArrayList();
+    private static ArrayList validMsgIDs = new ArrayList();
     
     private static int chosenQuery;
 
     public SQLSearch(int choice) 
     {
-        setTitle("Search Results");
-        chosenQuery = choice;
-        
-        
-        if(choice == 0)
-        {
-        	//Channel message search
-        	setSize(875, 915);
-        }
-        else if(choice == 1)
-        {
-        	//Custom SQL query
-        	setSize(830, 670);
-        }
-        initUI();
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        System.out.println("Chosen Query: " + chosenQuery);        
+    	
+    	//Checks if Mirth is >=3.5 as SQL Searching is not available in older Mirth
+    	String host = Main.returnHost();
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
+    	{
+    		System.out.println("Mirth database version is less than 3.5");
+    		logCommands.exportToLog("SQL Searching is not available in Mirth version <3.5.1. Action cancelled");
+    	}
+    	else
+    	{
+    		System.out.println("Mirth database version is 3.5 or higher");
+    		
+    		setTitle("Search Results");
+            chosenQuery = choice;
+            
+            
+            if(choice == 0)
+            {
+            	//Channel message search
+            	setSize(875, 915);
+            }
+            else if(choice == 1)
+            {
+            	//Custom SQL query
+            	setSize(830, 670);
+            }
+            initUI();
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            System.out.println("Chosen Query: " + chosenQuery);        
 
-        setVisible(true);
+            setVisible(true);
+    	}
     }
     
 
@@ -727,6 +744,7 @@ public class SQLSearch extends JFrame
     		SEARCHsentDates.clear();
     		SEARCHresponseDates.clear();
     		SEARCHimportantIDs.clear();
+    		validMsgIDs.clear();
     		
     		//captures text from the proper spaces
         	String startDateText = startDateSpace.getText().trim();
@@ -819,6 +837,9 @@ public class SQLSearch extends JFrame
     		SEARCHconnectorNames = new ArrayList(connectorNames);
     		SEARCHsentDates = new ArrayList(sentDates);
     		SEARCHresponseDates = new ArrayList(responseDates);
+    		
+    		//test for 2.2.6 message searching
+    		validMsgIDs = new ArrayList(messageIDs);
     	}
     	
     	//2 then checks if startDate is valid. If not null, grabs all messages after the start date
@@ -842,6 +863,12 @@ public class SQLSearch extends JFrame
     				SEARCHconnectorNames.add(connectorNames.get(rdc));
     				SEARCHsentDates.add(sentDates.get(rdc));
     				SEARCHresponseDates.add(responseDates.get(rdc));
+    				
+    				//test for 2.2.6 message searching
+    				if(!validMsgIDs.contains(messageIDs.get(rdc)))
+    				{
+        	    		validMsgIDs.add(messageIDs.get(rdc));
+    				}
     			}
     		}
     	}
@@ -869,6 +896,12 @@ public class SQLSearch extends JFrame
     				SEARCHconnectorNames.add(connectorNames.get(rdc));
     				SEARCHsentDates.add(sentDates.get(rdc));
     				SEARCHresponseDates.add(responseDates.get(rdc));
+    				
+    				//test for 2.2.6 message searching
+    				if(!validMsgIDs.contains(messageIDs.get(rdc)))
+    				{
+        	    		validMsgIDs.add(messageIDs.get(rdc));
+    				}
     			}
     		}
     	}
@@ -893,6 +926,12 @@ public class SQLSearch extends JFrame
     				SEARCHconnectorNames.remove(connectorNames.get(rdc));
     				SEARCHsentDates.remove(sentDates.get(rdc));
     				SEARCHresponseDates.remove(responseDates.get(rdc));
+    				
+    				//test for 2.2.6 message searching
+    				if(validMsgIDs.contains(messageIDs.get(rdc)))
+    				{
+        	    		validMsgIDs.remove(messageIDs.get(rdc));
+    				}
     			}
     		}
     	}
@@ -911,6 +950,12 @@ public class SQLSearch extends JFrame
     				{
     					SEARCHimportantIDs.add(SEARCHmessageIDs.get(mts));
     				}
+    				
+    				//test for 2.2.6 message searching
+    				if(currentMessage.contains(searchText.toUpperCase()) && !validMsgIDs.contains(messageIDs.get(mts)))
+    				{
+        	    		validMsgIDs.add(messageIDs.get(mts));
+    				}
     			}
     		}
     		else
@@ -923,6 +968,12 @@ public class SQLSearch extends JFrame
     				if(currentMessage.contains(searchText.toUpperCase()) && !SEARCHimportantIDs.contains(messageIDs.get(msg)))
     				{
     					SEARCHimportantIDs.add(messageIDs.get(msg));
+    				}
+    				
+    				//test for 2.2.6 message searching
+    				if(currentMessage.contains(searchText.toUpperCase()) && !validMsgIDs.contains(messageIDs.get(msg)))
+    				{
+        	    		validMsgIDs.add(messageIDs.get(msg));
     				}
     			}
     		}
@@ -1013,12 +1064,53 @@ public class SQLSearch extends JFrame
     	System.out.println("SEARCHsentDates.size()        = " + SEARCHsentDates.size());
     	System.out.println("SEARCHresponseDates.size()    = " + SEARCHresponseDates.size());
     	System.out.println("SEARCHimportantIDs.size()     = " + SEARCHimportantIDs.size());
+    	System.out.println("validMsgIDs.size()            = " + validMsgIDs.size());
     	System.out.println("=====================================================");
     	
-    	for(int j=0;j<SEARCHmessageIDs.size();j++)
-		{
-			System.out.println("SEARCHmessageIDs ID #" + (j+1) + ": " + SEARCHmessageIDs.get(j));
-		}
+    	//Experimental 2.2.6 search function
+    	
+    	SEARCHfirstMetadataIDs.clear();
+		SEARCHmessageIDs.clear();
+		SEARCHcontentTypes.clear();
+		SEARCHcontents.clear();
+		SEARCHsecondMetadataIDs.clear();
+		SEARCHsecondMessageIDs.clear();
+		SEARCHreceivedDates.clear();
+		SEARCHstatuses.clear();
+		SEARCHconnectorNames.clear();
+		SEARCHsentDates.clear();
+		SEARCHresponseDates.clear();
+    	
+    	//iterates through all captured message IDs
+    	for(int firstSearch=0;firstSearch<validMsgIDs.size();firstSearch++)
+    	{
+    		String currentIDForSearch = validMsgIDs.get(firstSearch).toString();
+    		//First iteration over the entire first messageIDs ArrayList, capturing the right information
+    		for(int firstSubSearch=0;firstSubSearch<messageIDs.size();firstSubSearch++)
+    		{
+    			if(currentIDForSearch.equals(messageIDs.get(firstSubSearch).toString()))
+    			{
+    				SEARCHfirstMetadataIDs.add(firstMetadataIDs.get(firstSubSearch));
+    	            SEARCHmessageIDs.add(messageIDs.get(firstSubSearch));
+    	            SEARCHcontentTypes.add(contentTypes.get(firstSubSearch));
+    	            SEARCHcontents.add(contents.get(firstSubSearch));
+    			}
+    		}
+    		
+    		for(int secondSubSearch=0;secondSubSearch<secondMessageIDs.size();secondSubSearch++)
+    		{
+    			if(currentIDForSearch.equals(secondMessageIDs.get(secondSubSearch).toString()))
+    			{
+    				SEARCHsecondMetadataIDs.add(secondMetadataIDs.get(secondSubSearch));
+    	            SEARCHsecondMessageIDs.add(secondMessageIDs.get(secondSubSearch));
+    	            SEARCHreceivedDates.add(receivedDates.get(secondSubSearch));
+    	            SEARCHstatuses.add(statuses.get(secondSubSearch));
+    	            SEARCHconnectorNames.add(connectorNames.get(secondSubSearch));
+    	            SEARCHsentDates.add(sentDates.get(secondSubSearch));
+    	            SEARCHresponseDates.add(responseDates.get(secondSubSearch));
+    			}
+    		}
+    	}
     	
     	//function call to re display the search results
     	loadDataChannelsSearch();
@@ -1058,6 +1150,15 @@ public class SQLSearch extends JFrame
     	model.addColumn("CONTENT");
     	model.addColumn("CONTENT_TYPE");
     	model.addColumn("CONNECTOR_NAME");
+    	
+    	boolean runme = true;
+    	for(int blah=0; blah<validMsgIDs.size();blah++)
+    	{
+    		if(runme == true)
+    		{
+    			System.out.println("FOUND #" + (blah+1) + ": " + validMsgIDs.get(blah));
+    		}    		
+    	}
     	
     	for(int display=0;display<SEARCHmessageIDs.size();display++)
     	{
