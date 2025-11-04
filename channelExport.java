@@ -51,6 +51,7 @@ public class channelExport
     
     //added in 2.2.5 to store the active channel names
     private static ArrayList activeChannelNames = new ArrayList();
+    private static boolean isMyMirthVersionOver35 = true;
 
     public static boolean includeCodeTemplates(String yesNo)
     {
@@ -107,6 +108,7 @@ public class channelExport
     	
     	if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
     	{
+    		isMyMirthVersionOver35 = false;
     		System.out.println("Mirth database version is less than 3.5");
     		if(forceNewChannelGeneration == true)
     		{
@@ -120,22 +122,28 @@ public class channelExport
     	}
     	else
     	{
+    		isMyMirthVersionOver35 = true;
     		System.out.println("Mirth database version is 3.5 or higher");
     		skipCMD = false;
     	}
     	
     	//added in 2.2.5 - This grabs a list of all active channels used in evaluation for the SFTP Restart Channel addition    	
-        SQLCommand.channelStatusBuilder(host);
-        int numberOfChannels = SQLCommand.channelStatusListSize();
-        System.out.println("Total Channel Count: " + numberOfChannels);
-        for (int i = 0; i < numberOfChannels; i++) 
-        {
-            if (SQLCommand.returnChannelStatus(i).toString().equals("[ACTIVE]"))
+    	//Check added in 2.2.6 to only run this if Mirth DB > 3.5
+    	if(isMyMirthVersionOver35 == true)
+    	{
+    		SQLCommand.channelStatusBuilder(host);
+            int numberOfChannels = SQLCommand.channelStatusListSize();
+            System.out.println("Total Channel Count: " + numberOfChannels);
+            for (int i = 0; i < numberOfChannels; i++) 
             {
-                activeChannelNames.add(SQLCommand.returnChannelName(i));
-                System.out.println("ACTIVE CHANNEL: " + SQLCommand.returnChannelName(i));
+                if (SQLCommand.returnChannelStatus(i).toString().equals("[ACTIVE]"))
+                {
+                    activeChannelNames.add(SQLCommand.returnChannelName(i));
+                    System.out.println("ACTIVE CHANNEL: " + SQLCommand.returnChannelName(i));
+                }
             }
-        }
+    	}
+        
         SQLCommand.clearArraysForActiveChannels();    	
     	
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
@@ -172,6 +180,11 @@ public class channelExport
 			{
 				logCommands.exportToLog("ERROR: " + e);
 				logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
+				
+				if(e.toString().contains("Database") && e.toString().contains("not found"))
+	            {
+	            	Main.configPathReader();
+	            }
 			}
 		  e.printStackTrace();
 		}
@@ -235,6 +248,11 @@ public class channelExport
        catch (Exception e) 
        {
            e.printStackTrace();
+           
+           if(e.toString().contains("Database") && e.toString().contains("not found"))
+           {
+           	Main.configPathReader();
+           }
        }
 
        //calls codeTemplates
@@ -470,6 +488,11 @@ public class channelExport
     				logCommands.exportToLog("Error: java.sql.SQLSyntaxErrorException: Table/View 'CODE_TEMPLATE_LIBRARY' does not exist.");
     				logCommands.exportToLog("Unable to properly export Code Template Libraries. The full/channel(s) export likely has generated without issue. Please open the XML file(s) to confirm");
     			}
+    			
+    			if(e.toString().contains("Database") && e.toString().contains("not found"))
+                {
+                	Main.configPathReader();
+                }
     			e.printStackTrace();
     		}
     		queryCount++;

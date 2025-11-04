@@ -28,6 +28,7 @@ public class Main
 	private static String changedBUpPathString = "";
 	private static boolean changedMirthDBDirPath = false;
 	private static String changedMDBDirPath = "";
+	private static boolean wasPropertiesFileRead = false;
 
     public static void main(String args[]) throws ClassNotFoundException, SQLException, FileNotFoundException
     {
@@ -417,6 +418,58 @@ public class Main
     public static boolean changedDirTF()
     {
     	return changedMirthDBDirPath;
+    }
+    
+    public static String configPathReader()
+    {
+    	//added in 2.2.6
+    	//This method is called if the Mirth DB isn't found automatically. The Mirth DB path will be read from the mirth.properties file (if it exists)
+    	String host = returnHost();
+    	
+    	String propertiesFilePath = host.trim().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "").replace("appdata", "") + "conf\\mirth.properties";        
+        File propertiesFile = new File(propertiesFilePath);
+        
+        if(wasPropertiesFileRead != true)
+        {
+        	if(propertiesFile.exists())
+            {
+            	System.out.println("mirth.properties file exists. Attemtping to read");
+            	logCommands.exportToLog("mirth.properties file exists. Attemtping to read");
+            	try (BufferedReader reader = Files.newBufferedReader(Paths.get(propertiesFilePath)))
+    		    {
+    		        String line;
+    		        while ((line = reader.readLine()) != null) 
+    		        {
+    		        	if(line.contains("dir.appdata ="))
+    		        	{
+    		        		String capturedDBPath = line.replace("dir.appdata = ", "").trim();
+    		        		changedMirthDBDirPath = true;
+    		        		changedMDBDirPath = capturedDBPath+"\\\\";
+    		        		System.out.println("Read DB Path: " + changedMDBDirPath);
+    		        		logCommands.exportToLog("DB path '" + changedMDBDirPath + "mirthdb' read from the mirth.properties file");
+    		        		logCommands.exportToLog("Please attempt to run the last operation again");
+    		        	}
+    		        }
+    		        reader.close();
+    		    } 
+    		    catch (IOException e) 
+    		    {
+    		        e.printStackTrace();
+    		    }
+            	wasPropertiesFileRead = true;
+            }
+        	else
+        	{
+        		System.out.println("No mirth.properties file was found. Search for the Mirth DB manually");
+        		logCommands.exportToLog("No mirth.properties file was found. Please search for the Mirth DB manually");
+        	}
+        }
+        else
+        {
+        	System.out.println("This function was previously called. The mirth db path in the mirth.properties folder could not be accessed. Please manually search for the Mirth DB");
+        }        
+    	
+    	return "config read";
     }
 
 }
