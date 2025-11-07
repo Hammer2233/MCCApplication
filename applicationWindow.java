@@ -1618,7 +1618,11 @@ public class applicationWindow extends JFrame implements ActionListener
                 	{
                 		if(serviceState == "STOPPED")
                     	{
-                    		logCommands.exportToLog("Channel Message Search enabled. Running...");
+                			if(Main.getWindowStatus() == false)
+                			{
+                				logCommands.exportToLog("Channel Message Search enabled. Running...");
+                			}
+                    		
                     		new SQLSearch(0);
                         	                    	
                     	}
@@ -1644,7 +1648,10 @@ public class applicationWindow extends JFrame implements ActionListener
                 	{
                 		if(serviceState == "STOPPED")
                     	{
-                    		logCommands.exportToLog("SQL Search enabled. Running...");
+                			if(Main.getWindowStatus() == false)
+                			{
+                				logCommands.exportToLog("SQL Search enabled. Running...");
+                			}                    		
                     		new SQLSearch(1);
                         	                    	
                     	}
@@ -1793,5 +1800,11 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
     	return "pushed";
-    }    
+    }  
+    
+    public static String displayDupeSQLWindowMessage()
+    {
+    	JOptionPane.showMessageDialog(labelVersion, "ERROR: Unable to open SQL Search Window.\n\nOnly 1 SQL Search window can be open at a time.\nPlease close the open window and try again.");
+    	return "Window opened";
+    }
 }
