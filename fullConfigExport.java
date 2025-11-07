@@ -567,6 +567,7 @@ public class fullConfigExport
         catch (Exception e) 
         {
         	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Is the service running? Or is something else connected to the Mirth DB?");
+        	logCommands.exportToLog("If the Mirth Database path has been changed, please confirm you're connected to the proper folder");
             e.printStackTrace();
         }
         return versionInfo;

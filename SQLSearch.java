@@ -130,7 +130,15 @@ public class SQLSearch extends JFrame
             }
             initUI();
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-            System.out.println("Chosen Query: " + chosenQuery);        
+            
+            if(chosenQuery == 0)
+            {
+            	System.out.println("Chosen Query: Channel Message Search"); 
+            }
+            else if(chosenQuery == 1)
+            {
+            	System.out.println("Chosen Query: Custom SQL Query"); 
+            }
 
             setVisible(true);
     	}
@@ -254,7 +262,7 @@ public class SQLSearch extends JFrame
         }
         add(northPanel, BorderLayout.NORTH);
         
-        // Add a MouseListener to detect cell clicks
+        //Added a MouseListener to detect cell clicks
         table.addMouseListener(new MouseAdapter() 
         {
             @Override
@@ -305,11 +313,11 @@ public class SQLSearch extends JFrame
 
         int numberOfChannels = SQLCommand.channelStatusListSize();
         
-        // Calls the SQLCommand class to make use of the channel status check
+        //Calls the SQLCommand class to make use of the channel status check
         String host = Main.returnHost();
         SQLCommand.channelStatusBuilder(host);
         
-        // Captures the names of all active channels for the arraylist
+        //Captures the names of all active channels for the arraylist
         for (int i = 0; i < numberOfChannels; i++) 
         {
             if (SQLCommand.returnChannelStatus(i).toString().equals("[ACTIVE]"))
@@ -374,32 +382,6 @@ public class SQLSearch extends JFrame
     {
     	formatChannelSearch();
     	
-//    	System.out.println("================= Array Sizes Check =================");
-//    	System.out.println("firstMetadataIDs.size()       = " + firstMetadataIDs.size());
-//    	System.out.println("messageIDs.size()             = " + messageIDs.size());
-//    	System.out.println("contentTypes.size()           = " + contentTypes.size());
-//    	System.out.println("contents.size()               = " + contents.size());
-//    	System.out.println("secondMetadataIDs.size()      = " + secondMetadataIDs.size());
-//    	System.out.println("secondMessageIDs.size()       = " + secondMessageIDs.size());
-//    	System.out.println("receivedDates.size()          = " + receivedDates.size());
-//    	System.out.println("statuses.size()               = " + statuses.size());
-//    	System.out.println("connectorNames.size()         = " + connectorNames.size());
-//    	System.out.println("sentDates.size()              = " + sentDates.size());
-//    	System.out.println("responseDates.size()          = " + responseDates.size());
-//    	System.out.println("SEARCHfirstMetadataIDs.size() = " + SEARCHfirstMetadataIDs.size());
-//    	System.out.println("SEARCHmessageIDs.size()       = " + SEARCHmessageIDs.size());
-//    	System.out.println("SEARCHcontentTypes.size()     = " + SEARCHcontentTypes.size());
-//    	System.out.println("SEARCHcontents.size()         = " + SEARCHcontents.size());
-//    	System.out.println("SEARCHsecondMetadataIDs.size()= " + SEARCHsecondMetadataIDs.size());
-//    	System.out.println("SEARCHsecondMessageIDs.size() = " + SEARCHsecondMessageIDs.size());
-//    	System.out.println("SEARCHreceivedDates.size()    = " + SEARCHreceivedDates.size());
-//    	System.out.println("SEARCHstatuses.size()         = " + SEARCHstatuses.size());
-//    	System.out.println("SEARCHconnectorNames.size()   = " + SEARCHconnectorNames.size());
-//    	System.out.println("SEARCHsentDates.size()        = " + SEARCHsentDates.size());
-//    	System.out.println("SEARCHresponseDates.size()    = " + SEARCHresponseDates.size());
-//    	System.out.println("SEARCHimportantIDs.size()     = " + SEARCHimportantIDs.size());
-//    	System.out.println("=====================================================");
-    	
     	DefaultTableModel model = new DefaultTableModel();
     	model.addColumn("MESSAGE_ID");
     	model.addColumn("RECEIVED_DATE");
@@ -436,7 +418,6 @@ public class SQLSearch extends JFrame
     private void loadDataChannelsOld() 
     {
         String host = Main.returnHost();
-        //try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT MESSAGE_ID, CONTENT_TYPE, CONTENT, DATA_TYPE FROM D_MC5"))
         try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT MESSAGE_ID, CONTENT_TYPE, CONTENT, DATA_TYPE FROM D_MC" + chosenChannel)) 
         {        	
         	ResultSetMetaData rsmd = rs.getMetaData();            
@@ -447,11 +428,6 @@ public class SQLSearch extends JFrame
             {
             	model.addColumn(rsmd.getColumnName(i));
             }
-            
-//            model.addColumn("ID");
-//            model.addColumn("NAME");
-//            model.addColumn("REVISION");
-//            model.addColumn("CHANNEL");
 
             while (rs.next()) 
             {
@@ -465,7 +441,7 @@ public class SQLSearch extends JFrame
                         Clob clob = rs.getClob(j);
                         if (clob != null) 
                         {
-                            // Convert CLOB to String
+                            //Convert CLOB to String
                             String clobData = clobToString(clob);
                             rowData[j - 1] = clobData; 
                         } 
@@ -478,7 +454,7 @@ public class SQLSearch extends JFrame
                     {
                         int contentTypeId = rs.getInt(j);
                         
-                        // Perform safe conversion check
+                        //Perform safe conversion check
                         if (contentTypeId > 0 && contentTypeId <= 15)
                         {
                             rowData[j - 1] = contentTypeConvert(contentTypeId);
@@ -578,7 +554,7 @@ public class SQLSearch extends JFrame
                         Clob clob = rs.getClob(j);
                         if (clob != null) 
                         {
-                            // Convert CLOB to String
+                            //Convert CLOB to String
                             String clobData = clobToString(clob);
                             rowData[j - 1] = clobData; 
                         } 
@@ -591,7 +567,7 @@ public class SQLSearch extends JFrame
                     {
                         int contentTypeId = rs.getInt(j);
                         
-                        // Perform safe conversion check
+                        //Perform safe conversion check
                         if (contentTypeId > 0 && contentTypeId <= 15)
                         {
                             rowData[j - 1] = contentTypeConvert(contentTypeId);
@@ -635,7 +611,6 @@ public class SQLSearch extends JFrame
     	contents.clear();
     	
     	String host = Main.returnHost();
-    	//String[] queries = { "SELECT METADATA_ID, MESSAGE_ID, CONTENT_TYPE, CONTENT FROM D_MC" + chosenChannel + " where DATA_TYPE like '%HL7%'", "SELECT ID, MESSAGE_ID, RECEIVED_DATE, STATUS, CONNECTOR_NAME, SEND_DATE, RESPONSE_DATE FROM D_MM" + chosenChannel };
     	String[] queries = { "SELECT METADATA_ID, MESSAGE_ID, CONTENT_TYPE, CONTENT FROM D_MC" + chosenChannel + " where DATA_TYPE like '%HL7%' ORDER BY MESSAGE_ID", "SELECT ID, MESSAGE_ID, RECEIVED_DATE, STATUS, CONNECTOR_NAME, SEND_DATE, RESPONSE_DATE FROM D_MM" + chosenChannel + " ORDER BY MESSAGE_ID"};
     	
     	for(int i=0;i<queries.length;i++)
@@ -819,9 +794,9 @@ public class SQLSearch extends JFrame
     
     public static String searchChannelCriteria(String startDate, String endDate, String searchText)
     {
-    	System.out.println("Start Date: " + startDate);
-    	System.out.println("End Date: " + endDate);
-    	System.out.println("Search Text: " + searchText);
+    	System.out.println("Start Date: '" + startDate + "'");
+    	System.out.println("End Date: '" + endDate + "'");
+    	System.out.println("Search Text: '" + searchText + "'");
     	
     	//first check is to see if everything is null. If so, it copies the standard arraylists into the search ones
     	if(startDate.equals("null") && endDate.equals("null") && searchText.equals("null"))
@@ -838,8 +813,14 @@ public class SQLSearch extends JFrame
     		SEARCHsentDates = new ArrayList(sentDates);
     		SEARCHresponseDates = new ArrayList(responseDates);
     		
-    		//test for 2.2.6 message searching
-    		validMsgIDs = new ArrayList(messageIDs);
+    		//2.2.6 logic to populate validMsgIDs array with each ID only 1 time (prevents dupes)
+    		for(int i=0; i<secondMessageIDs.size();i++)
+    		{
+    			if(!validMsgIDs.contains(secondMessageIDs.get(i)))
+    			{
+    				validMsgIDs.add(secondMessageIDs.get(i));
+    			}    			
+    		}
     	}
     	
     	//2 then checks if startDate is valid. If not null, grabs all messages after the start date
@@ -863,11 +844,12 @@ public class SQLSearch extends JFrame
     				SEARCHconnectorNames.add(connectorNames.get(rdc));
     				SEARCHsentDates.add(sentDates.get(rdc));
     				SEARCHresponseDates.add(responseDates.get(rdc));
-    				
-    				//test for 2.2.6 message searching
-    				if(!validMsgIDs.contains(messageIDs.get(rdc)))
+    			
+    				//2.2.6 message searching
+    				if(!validMsgIDs.contains(secondMessageIDs.get(rdc)))
     				{
-        	    		validMsgIDs.add(messageIDs.get(rdc));
+        	    		//validMsgIDs.add(messageIDs.get(rdc));
+    					validMsgIDs.add(secondMessageIDs.get(rdc));
     				}
     			}
     		}
@@ -878,6 +860,7 @@ public class SQLSearch extends JFrame
     	//if false, then it checks is startDate isn't null. If it's not, then 
     	if(!endDate.equals("null") && startDate.equals("null"))
     	{
+    		System.out.println("There is an end date but no start date");
     		for(int rdc=0;rdc<receivedDates.size();rdc++)
     		{
     			String[] splitTime = receivedDates.get(rdc).toString().split(" ");
@@ -897,10 +880,10 @@ public class SQLSearch extends JFrame
     				SEARCHsentDates.add(sentDates.get(rdc));
     				SEARCHresponseDates.add(responseDates.get(rdc));
     				
-    				//test for 2.2.6 message searching
-    				if(!validMsgIDs.contains(messageIDs.get(rdc)))
+    				//2.2.6 message searching
+    				if(!validMsgIDs.contains(secondMessageIDs.get(rdc)))
     				{
-        	    		validMsgIDs.add(messageIDs.get(rdc));
+        	    		validMsgIDs.add(secondMessageIDs.get(rdc));
     				}
     			}
     		}
@@ -908,136 +891,79 @@ public class SQLSearch extends JFrame
     	else if(!endDate.equals("null") && !startDate.equals("null"))
     	{
     		//in this case, there is a start date and an end date. We will remove any results in the array before the end date
-    		for(int rdc=0;rdc<SEARCHreceivedDates.size();rdc++)
+    		System.out.println("There is a start and end date");
+    		    		
+    		for(int rdc=0;rdc<receivedDates.size();rdc++)    		
     		{
-    			String[] splitTime = SEARCHreceivedDates.get(rdc).toString().split(" ");
+    			String[] splitTime = receivedDates.get(rdc).toString().split(" ");
     			String currentTime = splitTime[0].replace("-", "");
-    			if(Integer.valueOf(currentTime) >= Integer.valueOf(endDate))
-    			{    				
-    				SEARCHfirstMetadataIDs.remove(firstMetadataIDs.get(rdc)); 
-    	    		SEARCHmessageIDs.remove(messageIDs.get(rdc)); 
-    	    		SEARCHcontentTypes.remove(contentTypes.get(rdc)); 
-    	    		SEARCHcontents.remove(contents.get(rdc)); 
-    				
-    				SEARCHreceivedDates.remove(receivedDates.get(rdc));    				
-    				SEARCHsecondMetadataIDs.remove(secondMetadataIDs.get(rdc));
-    				SEARCHsecondMessageIDs.remove(secondMessageIDs.get(rdc));
-    				SEARCHstatuses.remove(statuses.get(rdc));
-    				SEARCHconnectorNames.remove(connectorNames.get(rdc));
-    				SEARCHsentDates.remove(sentDates.get(rdc));
-    				SEARCHresponseDates.remove(responseDates.get(rdc));
-    				
-    				//test for 2.2.6 message searching
-    				if(validMsgIDs.contains(messageIDs.get(rdc)))
+    			
+    			if(Integer.valueOf(currentTime) > Integer.valueOf(endDate))
+    			{    	
+    				//2.2.6 message searching
+    				if(validMsgIDs.contains(secondMessageIDs.get(rdc)))
     				{
-        	    		validMsgIDs.remove(messageIDs.get(rdc));
+        	    		validMsgIDs.remove(secondMessageIDs.get(rdc));
     				}
     			}
     		}
-    	}
+    	}    	
     	
     	//final search that filters for text if any was entered
-    	if(!searchText.isEmpty())
+    	if(!searchText.equals("null"))
     	{
+    		//updated 2.2.6 searching
     		System.out.println("Searching by text");
-    		//checks if one of the dates is not empty. If not it will filter off of currently captured information. 
     		if(!endDate.equals("null") || !startDate.equals("null"))
     		{
-    			for(int mts=0;mts<SEARCHcontents.size();mts++)
+    			System.out.println("Searching existing IDs since a date was populated");
+    			ArrayList goodIDs = new ArrayList();
+    			//There is either a start date, end date, or both. We will search the contents associated with the current validMsgIDs array and remove the IDs not containing the search text
+    			for(int mts=0;mts<validMsgIDs.size();mts++)
     			{
-    				String currentMessage = SEARCHcontents.get(mts).toString();
-    				if(currentMessage.contains(searchText.toUpperCase()) && !SEARCHimportantIDs.contains(SEARCHmessageIDs.get(mts)))
+    				//iterates over the full messageIDs, hitting when the current ID = the current validMsgIDs
+    				for(int getContent=0;getContent<messageIDs.size();getContent++)
     				{
-    					SEARCHimportantIDs.add(SEARCHmessageIDs.get(mts));
-    				}
-    				
-    				//test for 2.2.6 message searching
-    				if(currentMessage.contains(searchText.toUpperCase()) && !validMsgIDs.contains(messageIDs.get(mts)))
-    				{
-        	    		validMsgIDs.add(messageIDs.get(mts));
+    					if(validMsgIDs.get(mts).toString().equals(messageIDs.get(getContent).toString()))
+    					{
+    						//if the current content from the matching validMsgIDs value contains the search text mark the ID to be kept
+    						if(contents.get(getContent).toString().toUpperCase().contains(searchText.toUpperCase()))
+    						{
+    							if(!goodIDs.contains(validMsgIDs.get(mts)))
+    							{
+    								goodIDs.add(validMsgIDs.get(mts));
+    							}
+    						}
+    					}
     				}
     			}
+    			
+    			//clears the current validMsgIDs and repopulates the validMsgIDs with the goodIds ArrayList
+    			validMsgIDs.clear();
+    			validMsgIDs = goodIDs;
     		}
     		else
     		{
-    			//if the dates are empty, it will search the whole channel fresh for the containsText
-    			System.out.println("Both dates are empty");
-    			for(int msg=0;msg<contents.size();msg++)
-    			{
-    				String currentMessage = contents.get(msg).toString().toUpperCase();
-    				if(currentMessage.contains(searchText.toUpperCase()) && !SEARCHimportantIDs.contains(messageIDs.get(msg)))
-    				{
-    					SEARCHimportantIDs.add(messageIDs.get(msg));
-    				}
-    				
-    				//test for 2.2.6 message searching
-    				if(currentMessage.contains(searchText.toUpperCase()) && !validMsgIDs.contains(messageIDs.get(msg)))
-    				{
-        	    		validMsgIDs.add(messageIDs.get(msg));
-    				}
-    			}
+    			//There was no start and end dates, so we will search through the whole list, populating the validMsgIDs array
+    			System.out.println("Searching all IDs since a date was not populated");
+    			//iterates over the full messageIDs
+				for(int getContent=0;getContent<messageIDs.size();getContent++)
+				{
+					//if the current content from the search contains the search, text mark the ID to be kept
+					if(contents.get(getContent).toString().toUpperCase().contains(searchText.toUpperCase()))
+					{
+						if(!validMsgIDs.contains(messageIDs.get(getContent)))
+						{
+							System.out.println("Added ID: " + messageIDs.get(getContent));
+							validMsgIDs.add(messageIDs.get(getContent));
+						}
+					}
+				}
     		}
     	} 	
-    	
-    	//if SEARCHimportantIDs is not null, it will remove all messages from the arraylists that are not
-    	if(!SEARCHimportantIDs.isEmpty())
-    	{    		
-    		//checks if any of the other arrays have been populated
-    		if(!SEARCHfirstMetadataIDs.isEmpty())
-    		{
-    			System.out.println("A date field was populated");
-    			for(int idc=0;idc<SEARCHimportantIDs.size();idc++)
-    			{    			
-    				String currentMID = SEARCHmessageIDs.get(idc).toString();
-    				for(int idk=0;idk<SEARCHsecondMessageIDs.size();idk++)
-    				{
-        				//removes the data if the ID isn't in the ID list
-        				if(!SEARCHimportantIDs.contains(currentMID))
-        				{
-        					SEARCHfirstMetadataIDs.remove(idc); 
-            	    		SEARCHmessageIDs.remove(idc); 
-            	    		SEARCHcontentTypes.remove(idc); 
-            	    		SEARCHcontents.remove(idc); 
-            				
-            				SEARCHreceivedDates.remove(idk);    				
-            				SEARCHsecondMetadataIDs.remove(idk);
-            				SEARCHsecondMessageIDs.remove(idk);
-            				SEARCHstatuses.remove(idk);
-            				SEARCHconnectorNames.remove(idk);
-            				SEARCHsentDates.remove(idk);
-            				SEARCHresponseDates.remove(idk);
-        				}
-    				}    
-    			}
-    		}
-    		else
-    		{
-    			System.out.println("No date field was populated");
-    			//this is for if both dates were null, it does the population of the SEARCH Arrays here
-    			for(int idc=0;idc<messageIDs.size();idc++)
-    			{
-    				String currentMID = messageIDs.get(idc).toString();
-    				for(int idk=0;idk<SEARCHimportantIDs.size();idk++)
-    				{
-    					//removes the data if the ID isn't in the ID list
-        				if(secondMessageIDs.get(idk).equals(currentMID))
-        				{
-        					SEARCHfirstMetadataIDs.add(firstMetadataIDs.get(idc)); 
-            	    		SEARCHmessageIDs.add(messageIDs.get(idc)); 
-            	    		SEARCHcontentTypes.add(contentTypes.get(idc)); 
-            	    		SEARCHcontents.add(contents.get(idc)); 
-            				
-            				SEARCHreceivedDates.add(receivedDates.get(idk));    				
-            				SEARCHsecondMetadataIDs.add(secondMetadataIDs.get(idk));
-            				SEARCHsecondMessageIDs.add(secondMessageIDs.get(idk));
-            				SEARCHstatuses.add(statuses.get(idk));
-            				SEARCHconnectorNames.add(connectorNames.get(idk));
-            				SEARCHsentDates.add(sentDates.get(idk));
-            				SEARCHresponseDates.add(responseDates.get(idk));
-        				}
-    				}
-    			}
-    		}
+    	else
+    	{
+    		System.out.println("No text to search by");
     	}
     	
     	System.out.println("================= Array Sizes Check =================");
@@ -1067,8 +993,9 @@ public class SQLSearch extends JFrame
     	System.out.println("validMsgIDs.size()            = " + validMsgIDs.size());
     	System.out.println("=====================================================");
     	
-    	//Experimental 2.2.6 search function
+    	//2.2.6 search function that searches based on the values in the validMsgIDs ArrayLists
     	
+    	//Clears all ArrayLists
     	SEARCHfirstMetadataIDs.clear();
 		SEARCHmessageIDs.clear();
 		SEARCHcontentTypes.clear();
@@ -1150,15 +1077,6 @@ public class SQLSearch extends JFrame
     	model.addColumn("CONTENT");
     	model.addColumn("CONTENT_TYPE");
     	model.addColumn("CONNECTOR_NAME");
-    	
-    	boolean runme = true;
-    	for(int blah=0; blah<validMsgIDs.size();blah++)
-    	{
-    		if(runme == true)
-    		{
-    			System.out.println("FOUND #" + (blah+1) + ": " + validMsgIDs.get(blah));
-    		}    		
-    	}
     	
     	for(int display=0;display<SEARCHmessageIDs.size();display++)
     	{
