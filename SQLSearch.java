@@ -96,9 +96,12 @@ public class SQLSearch extends JFrame
     private static ArrayList validMsgIDs = new ArrayList();
     
     private static int chosenQuery;
+    private boolean isWindowOpen;
 
     public SQLSearch(int choice) 
     {
+    	//Checks if a Window is actively open
+    	isWindowOpen = Main.getWindowStatus();
     	
     	//Checks if Mirth is >=3.5 as SQL Searching is not available in older Mirth
     	String host = Main.returnHost();
@@ -112,35 +115,59 @@ public class SQLSearch extends JFrame
     	}
     	else
     	{
-    		System.out.println("Mirth database version is 3.5 or higher");
-    		
-    		setTitle("Search Results");
-            chosenQuery = choice;
-            
-            
-            if(choice == 0)
-            {
-            	//Channel message search
-            	setSize(875, 915);
-            }
-            else if(choice == 1)
-            {
-            	//Custom SQL query
-            	setSize(830, 670);
-            }
-            initUI();
-            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-            
-            if(chosenQuery == 0)
-            {
-            	System.out.println("Chosen Query: Channel Message Search"); 
-            }
-            else if(chosenQuery == 1)
-            {
-            	System.out.println("Chosen Query: Custom SQL Query"); 
-            }
+    		if(isWindowOpen == false)
+    		{
+    			System.out.println("Mirth database version is 3.5 or higher");
+        		
+        		setTitle("Search Results");
+                chosenQuery = choice;
+                System.out.println("Window Opened");
+                Main.setWindowStatus(true);
+                
+                if(choice == 0)
+                {
+                	//Channel message search
+                	logCommands.exportToLog("Channel Search window opened");
+                	setSize(875, 915);
+                }
+                else if(choice == 1)
+                {
+                	//Custom SQL query
+                	logCommands.exportToLog("SQL Search window opened");
+                	setSize(830, 670);
+                }
+                
+                
+                initUI();
+                setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+                
+               //Listen for window close
+               addWindowListener(new java.awt.event.WindowAdapter() 
+               {
+                    @Override
+                    public void windowClosed(java.awt.event.WindowEvent e) 
+                    {
+                        Main.setWindowStatus(false);
+                        System.out.println("SQLSearch window closed! isWindowOpen = " + isWindowOpen);
+                    }
+                });
+                
+                if(chosenQuery == 0)
+                {
+                	System.out.println("Chosen Query: Channel Message Search"); 
+                }
+                else if(chosenQuery == 1)
+                {
+                	System.out.println("Chosen Query: Custom SQL Query"); 
+                }
 
-            setVisible(true);
+                setVisible(true);
+    		} 
+    		else
+    		{
+    			System.out.println("Unable to open Window. A SQL Search Window has already been opened");
+    			applicationWindow.displayDupeSQLWindowMessage();
+    		}
     	}
     }
     
@@ -480,7 +507,8 @@ public class SQLSearch extends JFrame
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-        applicationWindow.killConnection(host);
+        //applicationWindow.killConnection(host);
+        killSQLConnection(host);
     }
     
     private static String clobToString(Clob clob) throws SQLException 
@@ -593,7 +621,8 @@ public class SQLSearch extends JFrame
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-        applicationWindow.killConnection(host);
+        //applicationWindow.killConnection(host);
+        killSQLConnection(host);
     }
     
     private static String formatChannelSearch()
@@ -655,8 +684,9 @@ public class SQLSearch extends JFrame
     	       }
     		}
     	}  
-    	applicationWindow.killConnection(host);
-       return "formatted";
+    	//applicationWindow.killConnection(host);
+    	killSQLConnection(host);
+        return "formatted";
     }
     
     private static class searchQueryText implements ActionListener
@@ -1109,5 +1139,28 @@ public class SQLSearch extends JFrame
         {
         	JOptionPane.showMessageDialog(SQLQueryName, "==========================Mirth Table Structure==========================\nNOTE: Tables are for Mirth Versions >3.5.1\n\nThese are the standard table names in the Mirth database. Not all tables\nmay be included in this list\n\nTables:\n==========\n-ALERT\n-CHANNEL\n-CHANNEL_GROUP\n-CODE_TEMPLATE\n-CODE_TEMPLATE_LIBRARY\n-CONFIGURATION\n-DEBUGGER_USAGE\n-D_CHANNELS\n-EVENT\n-PERSON\n-PERSON_PASSWORD\n-PERSON_PREFERENCE\n-SCHEMA_INFO\n-SCRIPT");
         }
+    }
+    
+    static String killSQLConnection(String host)
+    {
+        try 
+        {
+            DriverManager.getConnection(host + ";shutdown=true");
+        } 
+        catch (SQLException e) 
+        {
+            if (e.getMessage().contains("shutdown")) 
+            {
+                //logCommands.exportToLog("MCC's Connection to the Mirth Database was Shut Down Successfully.");
+            } 
+            else 
+            {
+                e.printStackTrace();
+                logCommands.exportToLog("Could not shutdown database.");
+            }
+            return "connection kill failed";
+        }
+        //logCommands.exportToLog("MCC's Connection to the Mirth Database was shut down successfully.");
+        return "connection killed";
     }
 }

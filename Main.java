@@ -29,6 +29,8 @@ public class Main
 	private static boolean changedMirthDBDirPath = false;
 	private static String changedMDBDirPath = "";
 	private static boolean wasPropertiesFileRead = false;
+	
+	private static boolean isWindowOpen = false;
 
     public static void main(String args[]) throws ClassNotFoundException, SQLException, FileNotFoundException
     {
@@ -470,6 +472,16 @@ public class Main
         }        
     	
     	return "config read";
+    }
+    
+    public static boolean getWindowStatus()
+    {
+    	return isWindowOpen;
+    }
+    
+    public static void setWindowStatus(boolean status)
+    {
+    	isWindowOpen = status;
     }
 
 }

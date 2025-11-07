@@ -2,7 +2,7 @@
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
 Current Version: 2.2.6
-Last Update: 9/29/25
+Last Update: 11/7/25
 =================================
 
 Version 2.1.0:
@@ -47,6 +47,8 @@ Version 2.2.5:
 -Fixed improper MCC package where MCC-SIDEKICK was not present in the package
 -Fixed bug in SFTP channel generation where the last channel's SFTP status was not being evaluated, causing the last channel (if it was SFTP) to be missed
 
-BETA Version 2.2.6:
--Added new option under "MORE FUNCTIONS" to allow custom SQL searches and a message searching GUI
--Added button to "CUSTOM SQL QUERY" to show a basic table structure of the Mirth database
+Version 2.2.6:
+-Added new option under "MORE FUNCTIONS" called "SQL SEARCH" which allows 2 types of SQL searching. One for custom SQL searches and the other is a built out HL7 message searching GUI.
+-Added button to "CUSTOM SQL QUERY" to show a basic table structure of the Mirth database.
+-Added function to read the mirth.properties file (if it exists) for the DB path in the event that the mirthdb folder isn't automatically detected.
+-Fixed bug that allowed both the "SEARCH CHANNELS" and "CUSTOM SQL QUERY" windows to be open at the same time.
