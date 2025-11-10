@@ -11,3 +11,4 @@ This application is being developed for creating full channel backups including 
 3/26/2025 - Fixed issue where channels can have "bad" characters that get translated in the <script> tags of the XML. Set up 2 manual lists, one with bad chars and the other with what to replace them with
 4/16/2025 - Added "MORE FUNCTIONS" button. This gives the ability to repair corrupt databases and pull a small information report on the database
 5/12/2025 - Restructured code to not rely on local files when building channels/code templates/full configurations. Using internal ArrayLists. Faster build times
+Read the "MCC- Bug Fixes and Features.txt" file for changes past 5/12/25 (last comment above was a 2.2.3 updates)
