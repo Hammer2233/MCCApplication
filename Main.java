@@ -49,6 +49,7 @@ public class Main
     	if(changedMirthDBDirPath == true)
     	{
     		System.out.println("DB Path was Changed");
+    		logCommands.exportDevLogItem("DB Path was Changed");
     		dbPath = changedMDBDirPath;
     	}
     	else
@@ -67,6 +68,7 @@ public class Main
     		catch (IOException runtimeError) 
     		{
     			System.out.println(runtimeError);
+    			logCommands.exportDevLogItem(runtimeError.toString());
     		} 
 
     		if (dbPath.contains("BINARY_PATH_NAME")) 
@@ -85,6 +87,7 @@ public class Main
     			else 
     			{
     				System.out.println("Error in finding path");
+    				logCommands.exportDevLogItem("Error in finding path");
     				dbPath = "";
     			} 
     		} 
@@ -114,12 +117,14 @@ public class Main
         		if(appdataCheck.exists())
             	{
         			System.out.println("Mirth DB is housed in the appdata folder");
+        			logCommands.exportDevLogItem("Mirth DB is housed in the appdata folder");
             		dbSubfolder = "appdata\\mirthdb;";
             		fullDBPath = fullDBPath + dbPath + dbSubfolder;
             	}
             	else
             	{
             		System.out.println("Mirth DB NOT housed in the appdata folder");
+            		logCommands.exportDevLogItem("Mirth DB NOT housed in the appdata folder");
             		dbSubfolder = "mirthdb";
             		fullDBPath = fullDBPath + dbPath + dbSubfolder;
             	}
@@ -127,12 +132,14 @@ public class Main
         	else
         	{
         		System.out.println("Mirth DB NOT housed in the appdata folder");
+        		logCommands.exportDevLogItem("Mirth DB NOT housed in the appdata folder");
         		dbSubfolder = "mirthdb";
         		fullDBPath = fullDBPath + dbPath + dbSubfolder;        		
         	}
         	check=2;
     	}    	
     	System.out.println("Full DB Path: " + fullDBPath);
+    	logCommands.exportDevLogItem("Full DB Path: " + fullDBPath);
     }
 
     //verifies if the Mirth service is running
@@ -153,6 +160,7 @@ public class Main
     	catch (IOException runtimeError) 
     	{
     		System.out.println(runtimeError);
+    		logCommands.exportDevLogItem(runtimeError.toString());
     	} 
 
     	//returns the status of the service
@@ -161,17 +169,20 @@ public class Main
     		if (serviceStatus.contains("FAILED")) 
     		{
     			System.out.println("SERVICE NOT INSTALLED");
+    			logCommands.exportDevLogItem("SERVICE NOT INSTALLED");
     			serviceState = "FAILED";
     		} 
     		else 
     		{
     			System.out.println("SERVICE STARTED");
+    			logCommands.exportDevLogItem("SERVICE STARTED");
     			serviceState = "STARTED";
     		}
     	}
     	else
     	{
-    		System.out.println("I AM STOPPED");
+    		System.out.println("SERVICE STOPPED");
+    		logCommands.exportDevLogItem("SERVICE STOPPED");
     		serviceState = "STOPPED";
     	}
     	return serviceState;
@@ -227,7 +238,8 @@ public class Main
     {
     	if(changedBackupPath == true)
     	{
-    		System.out.println("CHANGED");
+    		System.out.println("BACKUP PATH WAS CHANGED");
+    		logCommands.exportDevLogItem("BACKUP PATH WAS CHANGED");
     		backupPath = changedBUpPathString+"Backup " + getDateTime()+"\\";
     	}
     	else
@@ -345,6 +357,7 @@ public class Main
         if(wasRenamed == true)
         {
         	System.out.println("BEGINNING COPY SEQUENCE");
+        	logCommands.exportDevLogItem("BEGINNING COPY SEQUENCE");
         	//recreates the log folder
             dir.mkdirs();
         	
@@ -363,11 +376,14 @@ public class Main
             		if(manualLogFiles[checkLogs].toString().equals(logFiles.get(i).toString()))
             		{
             			System.out.println("Copying this log file: " + logFiles.get(i));
+            			logCommands.exportDevLogItem("Copying this log file: " + logFiles.get(i));
                     	File source = new File(newlogFolder+"\\"+logFiles.get(i));
                     	File destination = new File(path+"\\"+logFiles.get(i));
                     	
                     	System.out.println("SOURCE: " + source);
+                    	logCommands.exportDevLogItem("SOURCE: " + source);
                     	System.out.println("DESTINATION: " + destination);
+                    	logCommands.exportDevLogItem("DESTINATION: " + destination);
                     	
                     	try
                     	{
@@ -469,6 +485,7 @@ public class Main
         else
         {
         	System.out.println("This function was previously called. The mirth db path in the mirth.properties folder could not be accessed. Please manually search for the Mirth DB");
+        	logCommands.exportDevLogItem("This function was previously called. The mirth db path in the mirth.properties folder could not be accessed. Please manually search for the Mirth DB");
         }        
     	
     	return "config read";

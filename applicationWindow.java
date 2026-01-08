@@ -54,7 +54,7 @@ import java.nio.file.StandardOpenOption;
 public class applicationWindow extends JFrame implements ActionListener
 {
     //declaring variables for the GUI
-    public static JFrame frame = new JFrame("MCC-BETA");
+    public static JFrame frame = new JFrame("MCC");
     private JPanel mainAppBody;
     public static JLabel labelVersion;
     private static JPanel bottomButtonPanel;
@@ -85,6 +85,7 @@ public class applicationWindow extends JFrame implements ActionListener
     
     private static boolean toggleEnabled = false;
     private static boolean readThemeFromConfigFile = false;
+    private static boolean devLogSet = false;
 
     private static JTextArea logTextArea = new JTextArea(5,10);
     private static JScrollPane logTextScroll;
@@ -97,6 +98,7 @@ public class applicationWindow extends JFrame implements ActionListener
             }
           });
         System.out.println("Starting MCC");
+        logCommands.exportDevLogItem("Starting MCC");
     }
 
     private applicationWindow()
@@ -111,7 +113,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.6");
+        setTitle("MCC -2.2.7");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -370,6 +372,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		Main.setBackupFolder();
             channelExport.isFullMirthExportCheck("NO");
             System.out.println("PERFORMING CHANNEL BACKUP");
+            logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
             //String host = Main.returnHost();
             channelExport exportChannels = new channelExport();
             channelExport.exportChannels(host);
@@ -394,6 +397,7 @@ public class applicationWindow extends JFrame implements ActionListener
         		Main.setBackupFolder();
                 channelExport.isFullMirthExportCheck("NO");
                 System.out.println("PERFORMING CHANNEL BACKUP");
+                logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
                 //String host = Main.returnHost();
                 channelExport exportChannels = new channelExport();
                 channelExport.exportChannels(host);
@@ -495,6 +499,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     catch (Exception e1) 
                     {
                     	System.out.println("UNABLE TO EXPORT CHANNEL METADATA");
+                    	logCommands.exportDevLogItem("UNABLE TO EXPORT CHANNEL METADATA");
                         e1.printStackTrace();
                     }
                     channelExport.isFullMirthExportCheck("NO");
@@ -721,6 +726,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	else
                 	{
                 		System.out.println("CHOSE TO CHANGE PW");
+                		logCommands.exportDevLogItem("CHOSE TO CHANGE PW");
                         SQLCommand.resetUsernamePassword(host, 1);
                 	}
                     killConnection(host);
@@ -728,6 +734,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 else if(changeMirthUN == 1)
                 {
                     System.out.println("NO CHANGE TO PW");
+                    logCommands.exportDevLogItem("NO CHANGE TO PW");
                     logCommands.exportToLog("Username and Password NOT changed");
                 }
         	}
@@ -757,6 +764,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     	else
                     	{
                     		System.out.println("CHOSE TO CHANGE PW");
+                    		logCommands.exportDevLogItem("CHOSE TO CHANGE PW");
                             SQLCommand.resetUsernamePassword(host, 1);
                     	}
                         killConnection(host);
@@ -918,13 +926,13 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens"};
+            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint"};
                 int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
                 	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
                 }
-                System.out.println("Chosen: " + changeThemeChoice);                
+                System.out.println("Chosen: " + changeThemeChoice);                   
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==4)
             {
@@ -976,6 +984,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	logCommands.exportToLog("NO DESTINATION SELECTED. Auto-Backup setup cancelled");
                 }
                 System.out.println("autoBackupPath: " + autoBackupPath);
+                logCommands.exportDevLogItem("autoBackupPath: " + autoBackupPath);
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==5)
             {            	
@@ -1022,6 +1031,25 @@ public class applicationWindow extends JFrame implements ActionListener
                     	JOptionPane.showMessageDialog(null, scrollPane, "Channel Size", JOptionPane.PLAIN_MESSAGE);
                     }                    
                 }            	
+            }
+            if(captured.toLowerCase().equals(validCommands[i]) && i==6)
+            {  
+            	Object[] options = { "ENABLE", "DISABLE"};
+                int databaseChoice = JOptionPane.showOptionDialog(labelVersion, "Enable additional logging to the MCC-TRACE file?", "DEV LOGGING", 0, 2, null, options, options[1]);
+                if(databaseChoice < 0)
+                {
+                	logCommands.exportToLog("DEV LOGGING CANCELLED");
+                }
+                else if(databaseChoice == 0)
+                {
+                	devLogSet = true;
+                	logCommands.exportToLog("DEV LOGGING- ENABLED");
+                }
+                else if(databaseChoice == 1)
+                {
+                	devLogSet = false;
+                	logCommands.exportToLog("DEV LOGGING- DISABLED");
+                }
             }
         }
 
@@ -1399,6 +1427,44 @@ public class applicationWindow extends JFrame implements ActionListener
     		moreFunctions.setForeground(Color.WHITE);
     		moreFunctions.setBackground(new java.awt.Color(200, 3, 43));
     	}
+    	else if(chosenTheme == 7)
+    	{    		
+    		//Coral theme    		
+    		logTextArea.setBackground(new java.awt.Color(186,255,216));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.BLACK);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		middleButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(73,255,152));
+    		bottomButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		westPanel.setBackground(new java.awt.Color(73,255,152));
+    		centerPanel.setBackground(new java.awt.Color(73,255,152));
+    		imagePanel.setBackground(new java.awt.Color(73,255,152));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.BLACK);
+    		archiveChannels.setBackground(new java.awt.Color(251,206,168));
+
+    		fullMirthExport.setForeground(Color.BLACK);
+    		fullMirthExport.setBackground(new java.awt.Color(255,236,206));
+
+    		checkUsernameButton.setForeground(Color.WHITE);
+    		checkUsernameButton.setBackground(new java.awt.Color(133,104,99));
+
+    		changeUNandPW.setForeground(Color.WHITE);
+    		changeUNandPW.setBackground(new java.awt.Color(133,104,99));
+
+    		changeBackupPath.setForeground(Color.BLACK);
+    		changeBackupPath.setBackground(new java.awt.Color(192,255,215));
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(new java.awt.Color(88,189,166));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(255,69,181));
+    	}
     	return "theme changed";
     }
     
@@ -1455,6 +1521,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 		logCommands.exportToLog("Repair confirmed. Running...");
                     	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
                     	System.out.println("DB log To Repair: " + logPath);
+                    	logCommands.exportDevLogItem("DB log To Repair: " + logPath);
                     	
                     	Main.repairDatabaseLog(logPath);     
                 	}
@@ -1465,6 +1532,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     		logCommands.exportToLog("Repair confirmed. Running...");
                         	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
                         	System.out.println("DB log To Repair: " + logPath);
+                        	logCommands.exportDevLogItem("DB log To Repair: " + logPath);
                         	
                         	Main.repairDatabaseLog(logPath);                    	
                     	}
@@ -1563,6 +1631,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 		logCommands.exportToLog("Keystore repair confirmed. Running...");
                 		String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
                     	System.out.println("DB log To Repair: " + appdataPath);
+                    	logCommands.exportDevLogItem("DB log To Repair: " + appdataPath);
                     	
                     	Main.repairKeystoreFile(appdataPath);     
                 	}
@@ -1577,6 +1646,8 @@ public class applicationWindow extends JFrame implements ActionListener
                         	{
                         		System.out.println("Keystore File Detected");
                         		System.out.println("Keystore To Repair: " + appdataPath + "keystore.jks");
+                        		logCommands.exportDevLogItem("Keystore File Detected");
+                        		logCommands.exportDevLogItem("Keystore To Repair: " + appdataPath + "keystore.jks");
                         		Main.repairKeystoreFile(appdataPath);
                         	}   
                         	else
@@ -1603,6 +1674,7 @@ public class applicationWindow extends JFrame implements ActionListener
             	Object[] secondOptions = { "SEARCH CHANNELS", "CUSTOM SQL QUERY", "CANCEL" };
                 int sqlChoice = JOptionPane.showOptionDialog(labelVersion, "Functionality to run SQL Queries against the \nMirth database. Useful for:\n1. Viewing messages when the GUI is down\n2. Gathering specific information from tables\n3. Viewing raw data", "LAUNCH SEARCH?", 0, 2, null, secondOptions, secondOptions[1]);
                 System.out.println("SQL Search Choice: " + sqlChoice);
+                logCommands.exportDevLogItem("SQL Search Choice: " + sqlChoice);
                 if (sqlChoice < 0 || sqlChoice == 2)
                 {
                 	logCommands.exportToLog("SQL SEARCH CANCELLED. No action was taken");
@@ -1715,11 +1787,13 @@ public class applicationWindow extends JFrame implements ActionListener
     	if(mccConfig.exists())
     	{
     		System.out.println("MCC-Settings.config file detected");
+    		logCommands.exportDevLogItem("MCC-Settings.config file detected");
     		applySettingsFromConfigFile(currentDir);
     	}
     	else
     	{
     		System.out.println("No MCC-Settings.config file detected");
+    		logCommands.exportDevLogItem("No MCC-Settings.config file detected");
     	}
     	
     	return currentDir;
@@ -1729,6 +1803,7 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	String currentDir = System.getProperty("user.dir");
     	System.out.println("Current dir hosting MCC.jar: " + currentDir);
+    	logCommands.exportDevLogItem("Current dir hosting MCC.jar: " + currentDir);
     	
     	return currentDir;
     }
@@ -1749,7 +1824,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	if(line.contains("Theme: "))
                 	{
                 		String targetTheme = line.replace("Theme: ", "");
-                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS"};
+                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT"};
                 		for(int mythemes=0;mythemes<themes.length;mythemes++)
                 		{
                 			if(targetTheme.equals(themes[mythemes]))
@@ -1787,6 +1862,7 @@ public class applicationWindow extends JFrame implements ActionListener
             //If the file exists, it will overwrite the content
             Files.write(mccFile, textToWrite.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             System.out.println("Config file written successfully!");
+            logCommands.exportDevLogItem("Config file written successfully!");
         } 
     	catch (IOException e) 
     	{
@@ -1794,6 +1870,11 @@ public class applicationWindow extends JFrame implements ActionListener
         }
     	
     	return "file written";
+    }
+    
+    public static boolean returnDevLogChoice()
+    {
+    	return devLogSet;
     }
     
     public static String pushAlertThrough()

@@ -51,13 +51,15 @@ public class SQLCommand
                     String XMLdata = rs.getString(2);
                     currentUn = XMLdata;
                     usernameList.add(currentUn);
-                    System.out.println("currentUsername:" + currentUn);                
+                    System.out.println("currentUsername:" + currentUn);
+                    logCommands.exportDevLogItem("currentUsername:" + currentUn);
                 }
             } 
             catch (SQLException sqlExcept) 
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
             conn.close();
         }
@@ -84,6 +86,7 @@ public class SQLCommand
     {
     	int size = usernameList.size();
     	System.out.println("Username Array Size: " + size);
+    	logCommands.exportDevLogItem("Username Array Size: " + size);
     	return size;
     }
     
@@ -180,6 +183,7 @@ public class SQLCommand
                 	String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE PERSON_ID = "+targetUsername;
                 	//String query = "UPDATE PERSON_PASSWORD set PASSWORD = 'sPPaxXTtAA7M1tbOy7Ied7spHufmXpU6W5ER/TT2DSY/DjIkv+UEDQ==' WHERE USERNAME = '" + chosenUn + "'";
                 	System.out.println("Cred Query: " + query);
+                	logCommands.exportDevLogItem("Cred Query: " + query);
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -195,6 +199,7 @@ public class SQLCommand
                 	String query = "UPDATE PERSON set USERNAME = 'labdaq' where ID = "+targetUsername;
                 	//String query = "UPDATE PERSON set USERNAME = 'labdaq' where USERNAME = '" + chosenUn + "'";
                     System.out.println("Username Query: " + query);
+                    logCommands.exportDevLogItem("Username Query: " + query);
                     int modifiedRows = stmt.executeUpdate(query);
                     if(modifiedRows > 0)
                     {
@@ -245,6 +250,7 @@ public class SQLCommand
         catch (IOException runtimeError) 
         {
             System.out.println(runtimeError);
+            logCommands.exportDevLogItem(runtimeError.toString());
         } 
 
         if (configPath.contains("BINARY_PATH_NAME")) 
@@ -263,6 +269,7 @@ public class SQLCommand
             else 
             {
                 System.out.println("Error in finding path");
+                logCommands.exportDevLogItem("Error in finding path");
                 configPath = "";
             } 
         } 
@@ -283,6 +290,7 @@ public class SQLCommand
                 if (current.getName().equals("mirth.properties"))
                 {
                     System.out.println("FOUND mirth.properties FILE");
+                    logCommands.exportDevLogItem("FOUND mirth.properties FILE");
                     try (BufferedReader br = new BufferedReader(new FileReader(current))) 
                     {
                         String line;
@@ -293,6 +301,7 @@ public class SQLCommand
                             {
                             	dbConnection = line.replace("database.url = ", "");
                             	System.out.println("dbConnection From Conf: " + dbConnection);
+                            	logCommands.exportDevLogItem("dbConnection From Conf: " + dbConnection);
                             }
                             if(line.contains("database.username"))
                             {
@@ -314,6 +323,7 @@ public class SQLCommand
         else
         {
             System.out.println("CONF folder not found");
+            logCommands.exportDevLogItem("CONF folder not found");
         }        
         return dbConnection;
     }
@@ -409,6 +419,7 @@ public class SQLCommand
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
             conn.close();
         }
@@ -426,6 +437,7 @@ public class SQLCommand
     {
     	int arraySize = allChannelNames.size();
     	System.out.println(arraySize + " channel sizes queried");
+    	logCommands.exportDevLogItem(arraySize + " channel sizes queried");
     	return arraySize;
     }
     
@@ -491,6 +503,7 @@ public class SQLCommand
             	while (noOfRanQueries <= 1)
             	{
             		System.out.println("Queries Ran: " + noOfRanQueries);
+            		logCommands.exportDevLogItem("Queries Ran: " + noOfRanQueries);
             		query = commands[noOfRanQueries];
             		ResultSet rs = stmt.executeQuery(query);
             		    
@@ -533,6 +546,7 @@ public class SQLCommand
                     {
                         System.out.println("FAILED MISERABLY");
                         System.out.println(sqlExcept);
+                        logCommands.exportDevLogItem(sqlExcept.toString());
                     }
             	}
             	
@@ -545,6 +559,7 @@ public class SQLCommand
             		if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
                 	{
                 		System.out.println("Mirth database version is less than 3.5");
+                		logCommands.exportDevLogItem("Mirth database version is less than 3.5");
                 		if(channelExport.getForceNewChannelGeneration() == true)
                 		{
                 			//generated if Mirth version is <3.5 and choice to use the new generation was chosen under MORE FUNCTIONS
@@ -559,6 +574,7 @@ public class SQLCommand
                 			//generation for Mirth versions <3.5
                 			channelStatusBuilderOLD(host);
                     		System.out.println("channelNameList size: " + channelNameList.size());
+                    		logCommands.exportDevLogItem("channelNameList size: " + channelNameList.size());
             				for(int e=0;e<channelNameList.size();e++)
             				{
                 				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
@@ -682,6 +698,7 @@ public class SQLCommand
                     {
                         System.out.println("FAILED MISERABLY");
                         System.out.println(sqlExcept);
+                        logCommands.exportDevLogItem(sqlExcept.toString());
                     }
             	}
             	else if (n==1)
@@ -711,6 +728,7 @@ public class SQLCommand
                     {
                         System.out.println("FAILED MISERABLY");
                         System.out.println(sqlExcept);
+                        logCommands.exportDevLogItem(sqlExcept.toString());
                     } 
             	}
             	
@@ -780,6 +798,7 @@ public class SQLCommand
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
         } 
     	catch (Exception e) 
@@ -823,6 +842,7 @@ public class SQLCommand
         channelXML.clear();
         backupFolderPath = Main.getBackupFolder();
         System.out.println("backupFolderPath: " + backupFolderPath);
+        logCommands.exportDevLogItem("backupFolderPath: " + backupFolderPath);
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
             String query = "SELECT NAME, CHANNEL FROM CHANNEL";
@@ -841,6 +861,7 @@ public class SQLCommand
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
             conn.close();
         }
@@ -876,6 +897,8 @@ public class SQLCommand
             {
                 System.out.println("Second channel export");
                 System.out.println("I DIDN'T FIND THE FILE");
+                logCommands.exportDevLogItem("Second channel export");
+                logCommands.exportDevLogItem("I DIDN'T FIND THE FILE");
             }
     	}
         
