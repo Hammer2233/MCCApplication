@@ -110,9 +110,11 @@ public class channelExport
     	{
     		isMyMirthVersionOver35 = false;
     		System.out.println("Mirth database version is less than 3.5");
+    		logCommands.exportDevLogItem("Mirth database version is less than 3.5");
     		if(forceNewChannelGeneration == true)
     		{
     			System.out.println("User chose to use newer channel generation type");
+    			logCommands.exportDevLogItem("User chose to use newer channel generation type");
     			skipCMD = false;
     		}
     		else
@@ -124,6 +126,7 @@ public class channelExport
     	{
     		isMyMirthVersionOver35 = true;
     		System.out.println("Mirth database version is 3.5 or higher");
+    		logCommands.exportDevLogItem("Mirth database version is 3.5 or higher");
     		skipCMD = false;
     	}
     	
@@ -134,12 +137,14 @@ public class channelExport
     		SQLCommand.channelStatusBuilder(host);
             int numberOfChannels = SQLCommand.channelStatusListSize();
             System.out.println("Total Channel Count: " + numberOfChannels);
+            logCommands.exportDevLogItem("Total Channel Count: " + numberOfChannels);
             for (int i = 0; i < numberOfChannels; i++) 
             {
                 if (SQLCommand.returnChannelStatus(i).toString().equals("[ACTIVE]"))
                 {
                     activeChannelNames.add(SQLCommand.returnChannelName(i));
                     System.out.println("ACTIVE CHANNEL: " + SQLCommand.returnChannelName(i));
+                    logCommands.exportDevLogItem("ACTIVE CHANNEL: " + SQLCommand.returnChannelName(i));
                 }
             }
     	}
@@ -172,6 +177,7 @@ public class channelExport
 		    {
 		        System.out.println("FAILED MISERABLY");
 		        System.out.println(sqlExcept);
+		        logCommands.exportDevLogItem(sqlExcept.toString());
 		    }
 		}
 		catch (Exception e) 
@@ -242,7 +248,8 @@ public class channelExport
           catch (SQLException sqlExcept) 
           {
         	  System.out.println("FAILED MISERABLY");
-          		System.out.println(sqlExcept);
+          	  System.out.println(sqlExcept);
+          	  logCommands.exportDevLogItem(sqlExcept.toString());
           }
        } 
        catch (Exception e) 
@@ -341,6 +348,7 @@ public class channelExport
             				{
             					isSFTPChannelNeeded = true;
             					System.out.println(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
+            					logCommands.exportDevLogItem(channelNames.get(cm) + " has FTP/SFTP connection. Type: " + schemeType);
                 				sftpConnectedChannels.add(channelNames.get(cm));                				
             				} 
             				else
@@ -348,10 +356,12 @@ public class channelExport
             					if(!activeChannelNames.contains(channelNames.get(cm)))
             					{
             						System.out.println("Inactive channel using SFTP connection caught for '" + channelNames.get(cm) + "'");
+            						logCommands.exportDevLogItem("Inactive channel using SFTP connection caught for '" + channelNames.get(cm) + "'");
             					}
             					else
             					{
             						System.out.println("Dupe SFTP connection caught for channel '" + channelNames.get(cm) + "'");
+            						logCommands.exportDevLogItem("Dupe SFTP connection caught for channel '" + channelNames.get(cm) + "'");
             					}            					
             				}
             			}
@@ -371,6 +381,7 @@ public class channelExport
                 		channelXMLOutput += codeTemplateLibrary_XML.get(hi);
                 	}
                 	System.out.println("skipCMD: " + skipCMD);
+                	logCommands.exportDevLogItem("skipCMD: " + skipCMD);
                 	if(skipCMD == false)
                 	{
                 		channelXMLOutput += "</codeTemplateLibraries>\n</exportData>\n";
@@ -406,6 +417,7 @@ public class channelExport
             {
                 System.out.println("Second channel export");
                 System.out.println("I DIDN'T FIND THE FILE");
+                logCommands.exportDevLogItem("Second channel export - I DIDN'T FIND THE FILE");
             }
             
             //replaces the rawChannelCLOB with the new result
@@ -478,6 +490,7 @@ public class channelExport
     			{
     				System.out.println("FAILED MISERABLY");
     				System.out.println(sqlExcept);
+    				logCommands.exportDevLogItem(sqlExcept.toString());
     			}
     		}
     		catch (Exception e) 
@@ -485,6 +498,7 @@ public class channelExport
     			if(e.toString().contains("CODE_TEMPLATE_LIBRARY"))
     			{
     				System.out.println("Error: " + e);
+    				logCommands.exportDevLogItem("Error: " + e);
     				logCommands.exportToLog("Error: java.sql.SQLSyntaxErrorException: Table/View 'CODE_TEMPLATE_LIBRARY' does not exist.");
     				logCommands.exportToLog("Unable to properly export Code Template Libraries. The full/channel(s) export likely has generated without issue. Please open the XML file(s) to confirm");
     			}
@@ -497,6 +511,7 @@ public class channelExport
     		}
     		queryCount++;
     		System.out.println("Query Count: " + queryCount);
+    		logCommands.exportDevLogItem("Query Count: " + queryCount);
     	}   	
 
     	//adds the opening "codeTemplateLibraries" tag
@@ -526,6 +541,7 @@ public class channelExport
     			else if(line.contains("<codeTemplate "))
     			{
     				System.out.println(line);
+    				logCommands.exportDevLogItem(line);
     			}
     			else if(idCount>0 && line.contains("<id>"))
     			{
@@ -586,7 +602,8 @@ public class channelExport
             catch (FileNotFoundException fileExcept2) 
             {
                 System.out.println("Second channel export");
-                System.out.println("I DIDN'T FIND THE FILE");
+                System.out.println("I DIDN'T FIND THE FILE");                
+                logCommands.exportDevLogItem("Second channel export - I DIDN'T FIND THE FILE");
             }
     	}    	
     	return "codeTemplates and Libraries Exported";
@@ -642,10 +659,14 @@ public class channelExport
     	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 10)
     	{
     		System.out.println("I am greater than/equal to Mirth version 3.10.0");
+    		logCommands.exportDevLogItem("I am greater than/equal to Mirth version 3.10.0");
     		if(!channelNames.contains("SFTP Restart Channel") && !channelIDs.contains("07f073af-c1b5-43a1-be3b-6d211f08cabb"))
     		{
     			System.out.println("isSFTPChannelNeeded: " + isSFTPChannelNeeded);
+    			logCommands.exportDevLogItem("isSFTPChannelNeeded: " + isSFTPChannelNeeded);
 				System.out.println("sftpGenChoice: " + sftpGenChoice);
+				logCommands.exportDevLogItem("sftpGenChoice: " + sftpGenChoice);
+				
     			if(isSFTPChannelNeeded == true && sftpGenChoice == true)
     			{
     				generateSFTPTag = true;
@@ -670,6 +691,7 @@ public class channelExport
 	    			}
 	    			sftpChannelNames += "]";
 	    			System.out.println("Replacement for XML File: " + sftpChannelNames);
+	    			logCommands.exportDevLogItem("Replacement for XML File: " + sftpChannelNames);
 	    			
 	    			InputStream inputStream = channelExport.class.getResourceAsStream("/SFTP Restart Channel.xml");
 	    			if (inputStream != null) 
@@ -720,21 +742,25 @@ public class channelExport
     				if(sftpGenChoice == false)
     				{
     					System.out.println("User chose to disable SFTP generation via MORE FUNCTIONS");
+    					logCommands.exportDevLogItem("User chose to disable SFTP generation via MORE FUNCTIONS");
     				}
     				else
     				{
     					System.out.println("No SFTP connection type was found. No need to create the channel");
+    					logCommands.exportDevLogItem("No SFTP connection type was found. No need to create the channel");
     				}   				
     			}
     		}
     		else
     		{
     			System.out.println("SFTP Restart Channel already exists in client's database");
+    			logCommands.exportDevLogItem("SFTP Restart Channel already exists in client's database");
     		}		
     	}
     	else
     	{
     		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
+    		logCommands.exportDevLogItem("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
     	}
     	
     	return "SFTP Restart Channel Added";
@@ -754,6 +780,7 @@ public class channelExport
     public static boolean setForceNewChannelGeneration(boolean choice)
     {
     	System.out.println("Mirth will use the new channel generation: " + choice);
+    	logCommands.exportDevLogItem("Mirth will use the new channel generation: " + choice);
     	forceNewChannelGeneration = choice;
     	return forceNewChannelGeneration;
     }

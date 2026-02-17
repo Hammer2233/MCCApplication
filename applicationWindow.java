@@ -35,9 +35,13 @@ import java.awt.GridBagConstraints;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -54,7 +58,7 @@ import java.nio.file.StandardOpenOption;
 public class applicationWindow extends JFrame implements ActionListener
 {
     //declaring variables for the GUI
-    public static JFrame frame = new JFrame("MCC-BETA");
+    public static JFrame frame = new JFrame("MCC");
     private JPanel mainAppBody;
     public static JLabel labelVersion;
     private static JPanel bottomButtonPanel;
@@ -85,6 +89,8 @@ public class applicationWindow extends JFrame implements ActionListener
     
     private static boolean toggleEnabled = false;
     private static boolean readThemeFromConfigFile = false;
+    private static boolean devLogSet = false;
+    private static boolean backupRunForBlowout = false;
 
     private static JTextArea logTextArea = new JTextArea(5,10);
     private static JScrollPane logTextScroll;
@@ -97,6 +103,7 @@ public class applicationWindow extends JFrame implements ActionListener
             }
           });
         System.out.println("Starting MCC");
+        logCommands.exportDevLogItem("Starting MCC");
     }
 
     private applicationWindow()
@@ -111,7 +118,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.6");
+        setTitle("MCC -2.2.7");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -370,6 +377,7 @@ public class applicationWindow extends JFrame implements ActionListener
     		Main.setBackupFolder();
             channelExport.isFullMirthExportCheck("NO");
             System.out.println("PERFORMING CHANNEL BACKUP");
+            logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
             //String host = Main.returnHost();
             channelExport exportChannels = new channelExport();
             channelExport.exportChannels(host);
@@ -394,6 +402,7 @@ public class applicationWindow extends JFrame implements ActionListener
         		Main.setBackupFolder();
                 channelExport.isFullMirthExportCheck("NO");
                 System.out.println("PERFORMING CHANNEL BACKUP");
+                logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
                 //String host = Main.returnHost();
                 channelExport exportChannels = new channelExport();
                 channelExport.exportChannels(host);
@@ -495,6 +504,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     catch (Exception e1) 
                     {
                     	System.out.println("UNABLE TO EXPORT CHANNEL METADATA");
+                    	logCommands.exportDevLogItem("UNABLE TO EXPORT CHANNEL METADATA");
                         e1.printStackTrace();
                     }
                     channelExport.isFullMirthExportCheck("NO");
@@ -721,6 +731,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	else
                 	{
                 		System.out.println("CHOSE TO CHANGE PW");
+                		logCommands.exportDevLogItem("CHOSE TO CHANGE PW");
                         SQLCommand.resetUsernamePassword(host, 1);
                 	}
                     killConnection(host);
@@ -728,6 +739,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 else if(changeMirthUN == 1)
                 {
                     System.out.println("NO CHANGE TO PW");
+                    logCommands.exportDevLogItem("NO CHANGE TO PW");
                     logCommands.exportToLog("Username and Password NOT changed");
                 }
         	}
@@ -757,6 +769,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     	else
                     	{
                     		System.out.println("CHOSE TO CHANGE PW");
+                    		logCommands.exportDevLogItem("CHOSE TO CHANGE PW");
                             SQLCommand.resetUsernamePassword(host, 1);
                     	}
                         killConnection(host);
@@ -918,13 +931,13 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens"};
+            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint"};
                 int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
                 	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
                 }
-                System.out.println("Chosen: " + changeThemeChoice);                
+                System.out.println("Chosen: " + changeThemeChoice);                   
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==4)
             {
@@ -976,6 +989,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	logCommands.exportToLog("NO DESTINATION SELECTED. Auto-Backup setup cancelled");
                 }
                 System.out.println("autoBackupPath: " + autoBackupPath);
+                logCommands.exportDevLogItem("autoBackupPath: " + autoBackupPath);
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==5)
             {            	
@@ -1022,6 +1036,25 @@ public class applicationWindow extends JFrame implements ActionListener
                     	JOptionPane.showMessageDialog(null, scrollPane, "Channel Size", JOptionPane.PLAIN_MESSAGE);
                     }                    
                 }            	
+            }
+            if(captured.toLowerCase().equals(validCommands[i]) && i==6)
+            {  
+            	Object[] options = { "ENABLE", "DISABLE"};
+                int databaseChoice = JOptionPane.showOptionDialog(labelVersion, "Enable additional logging to the MCC-TRACE file?", "DEV LOGGING", 0, 2, null, options, options[1]);
+                if(databaseChoice < 0)
+                {
+                	logCommands.exportToLog("DEV LOGGING CANCELLED");
+                }
+                else if(databaseChoice == 0)
+                {
+                	devLogSet = true;
+                	logCommands.exportToLog("DEV LOGGING- ENABLED");
+                }
+                else if(databaseChoice == 1)
+                {
+                	devLogSet = false;
+                	logCommands.exportToLog("DEV LOGGING- DISABLED");
+                }
             }
         }
 
@@ -1399,6 +1432,44 @@ public class applicationWindow extends JFrame implements ActionListener
     		moreFunctions.setForeground(Color.WHITE);
     		moreFunctions.setBackground(new java.awt.Color(200, 3, 43));
     	}
+    	else if(chosenTheme == 7)
+    	{    		
+    		//Coral theme    		
+    		logTextArea.setBackground(new java.awt.Color(186,255,216));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.BLACK);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		middleButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(73,255,152));
+    		bottomButtonPanel.setBackground(new java.awt.Color(73,255,152));
+    		westPanel.setBackground(new java.awt.Color(73,255,152));
+    		centerPanel.setBackground(new java.awt.Color(73,255,152));
+    		imagePanel.setBackground(new java.awt.Color(73,255,152));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.BLACK);
+    		archiveChannels.setBackground(new java.awt.Color(251,206,168));
+
+    		fullMirthExport.setForeground(Color.BLACK);
+    		fullMirthExport.setBackground(new java.awt.Color(255,236,206));
+
+    		checkUsernameButton.setForeground(Color.WHITE);
+    		checkUsernameButton.setBackground(new java.awt.Color(133,104,99));
+
+    		changeUNandPW.setForeground(Color.WHITE);
+    		changeUNandPW.setBackground(new java.awt.Color(133,104,99));
+
+    		changeBackupPath.setForeground(Color.BLACK);
+    		changeBackupPath.setBackground(new java.awt.Color(192,255,215));
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(new java.awt.Color(88,189,166));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(255,69,181));
+    	}
     	return "theme changed";
     }
     
@@ -1428,17 +1499,16 @@ public class applicationWindow extends JFrame implements ActionListener
         return "connection killed";
     }
     
-    private static class moreActionsCall implements ActionListener
+    //added in 2.2.7 to reformat the MORE FUNCTIONS menu
+    private static class moreActionsCall implements ActionListener 
     {
-    	@Override
-        public void actionPerformed(ActionEvent e)
+        @Override
+        public void actionPerformed(ActionEvent e) 
         {
-    		String serviceState = Main.checkMirthService();
-    		
-    		Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "TOGGLE SFTP ON/OFF", "FORCE NEW CHANNEL GEN", "REPAIR KEYSTORE", "SQL SEARCH"};    		   		
-    		//Lite Channel Export temp removed in 2.2.3 Object[] options = { "REPAIR CORRUPT DB", "DATABASE OVERVIEW", "LITE CHANNEL EXPORT" };
-            int additionalFeatureOption = JOptionPane.showOptionDialog(labelVersion, "                                                                                                                 Select action:\n                                                                                                             ===============", "MORE FEATURES", 0, 2, iconImg, options, options[1]);
-            if (additionalFeatureOption == 0)
+            int selection = showGroupedMoreActionsDialog();
+            String serviceState = Main.checkMirthService();
+
+            if (selection == 1) 
             {
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
                 int repairChoice = JOptionPane.showOptionDialog(labelVersion, "This command will:\n1. Rename the current 'log' folder in the database\n2. Create a new 'log' folder\n3. Copy all files from the old 'log' folder to the new one\n\nNOTE:\n-Ensure you have ran MCC.jar as admin via the batch file\n-Run only if backups are not generating", "REPAIR DATABASE?", 0, 2, null, secondOptions, secondOptions[1]);
@@ -1455,6 +1525,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 		logCommands.exportToLog("Repair confirmed. Running...");
                     	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
                     	System.out.println("DB log To Repair: " + logPath);
+                    	logCommands.exportDevLogItem("DB log To Repair: " + logPath);
                     	
                     	Main.repairDatabaseLog(logPath);     
                 	}
@@ -1465,6 +1536,7 @@ public class applicationWindow extends JFrame implements ActionListener
                     		logCommands.exportToLog("Repair confirmed. Running...");
                         	String logPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "")+"\\log";
                         	System.out.println("DB log To Repair: " + logPath);
+                        	logCommands.exportDevLogItem("DB log To Repair: " + logPath);
                         	
                         	Main.repairDatabaseLog(logPath);                    	
                     	}
@@ -1478,9 +1550,96 @@ public class applicationWindow extends JFrame implements ActionListener
                     		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
                     	}  
                 	}           	
-                }                	
+                }
+            } 
+            else if (selection == 2)
+            {
+            	//Mirth blowout added in 2.2.7
+            	System.out.println("Doing a blowout");
+            	if(backupRunForBlowout == false)
+            	{
+            		JOptionPane.showMessageDialog(labelVersion, "WARNING! READ BEFORE PROCEEDING!\n\nA Full Configuration Export must be ran before blowing out\na Mirth database. Please use the \"EXPORT MIRTH CONFIG\"\nbutton to take a backup.\n\nRun this command again afterwards for further options.\n", "BACKUP REQUIRED BEFORE BLOWOUT", JOptionPane.ERROR_MESSAGE);
+            		logCommands.exportToLog("A full Mirth Configuration export must be taken before a blowout can be performed.");
+            		logCommands.exportToLog("Please take a backup before proceeding, then run the command again.");
+            	}
+            	else
+            	{
+            		String host = Main.returnHost();
+            		//gets size of the appdata and MirthDB folder
+            		File directory = new File(host.replace("jdbc:derby:", "").replace("\\mirthdb;", ""));
+            		long appdataSize = SQLCommand.getFolderSize(directory);
+            		String sizePreBlowout = appdataSize/1000.0 + "kb / " + appdataSize/1000000.0 + "mb / " + appdataSize/1000000000.0 + "gb";            		
+            		
+            		Object[] secondOptions = { "CONTINUE", "CANCEL" };
+                    int blowoutChoice = JOptionPane.showOptionDialog(labelVersion, "READ BEFORE PROCEEDING!\nYou are about to perform a Mirth blowout.\n\nThe following will occur:\n1. MCC queries the database for the 'D_MCx' tables (where messages are stored)\n2. Stores the names of the active tables\n3. Calls a SYSC_UTIL function to compress each table\n\nNOTES:\n-Ensure you have ran MCC.jar as admin via the batch file\n-The blowout can take 3+ minutes depending on DB size and hardware\n\nMirth Database Size PRE Blowout:\n" + sizePreBlowout + "\n", "PERFORM MIRTH BLOWOUT?", JOptionPane.WARNING_MESSAGE, 2, null, secondOptions, secondOptions[1]);
+                    if (blowoutChoice < 0 || blowoutChoice == 1)
+                    {
+                    	logCommands.exportToLog("MIRTH BLOWOUT CANCELLED. No action was taken");
+                    }
+                    else if (blowoutChoice == 0)
+                    {
+                    	//added in 2.2.3
+                    	boolean changedDirCheck = Main.changedDirTF();
+                    	if(changedDirCheck == true)
+                    	{
+                    		logCommands.exportToLog("Blowout confirmed. Running...");
+                    		SQLCommand.channelsForCompression(host);
+                    		
+                    		int callThis = SQLCommand.numberOfChannelsToCompress();
+                    		for (int call=0;call<callThis;call++)
+                    		{
+                    			SQLCommand.compressCurrentTable(SQLCommand.nameOfCurrentTable(call), host);
+                    			System.out.println(SQLCommand.nameOfCurrentTable(call));
+                    			logCommands.exportDevLogItem("Attempting to compress table " + SQLCommand.nameOfCurrentTable(call));
+                    		}
+                    		
+                    		long postAppdataSize = SQLCommand.getFolderSize(directory);
+                    		String sizePostBlowout = postAppdataSize/1000.0 + "kb / " + postAppdataSize/1000000.0 + "mb / " + postAppdataSize/1000000000.0 + "gb";
+                    		killConnection(host);
+                    		
+                    		JOptionPane.showMessageDialog(labelVersion, "MIRTH BLOWOUT RESULTS:\n=======================\n\n" + "Mirth DB Size PRE Blowout:\n" + sizePreBlowout + "\n\nMirth DB Size POST Blowout:\n" + sizePostBlowout);
+                    		logCommands.exportToLog("PRE BLOWOUT: " + sizePreBlowout);
+                    		logCommands.exportToLog("POST BLOWOUT: " + sizePostBlowout);
+                    	}
+                    	else
+                    	{
+                    		if(serviceState == "STOPPED")
+                        	{
+                        		logCommands.exportToLog("Blowout confirmed. Running...");
+                        		SQLCommand.channelsForCompression(host);
+                        		
+                        		int callThis = SQLCommand.numberOfChannelsToCompress();
+                        		for (int call=0;call<callThis;call++)
+                        		{
+                        			SQLCommand.compressCurrentTable(SQLCommand.nameOfCurrentTable(call), host);
+                        			System.out.println(SQLCommand.nameOfCurrentTable(call));
+                        			logCommands.exportDevLogItem("Attempting to compress table " + SQLCommand.nameOfCurrentTable(call));
+                        		}
+                        		
+                        		long postAppdataSize = SQLCommand.getFolderSize(directory);
+                        		String sizePostBlowout = postAppdataSize/1000.0 + "kb / " + postAppdataSize/1000000.0 + "mb / " + postAppdataSize/1000000000.0 + "gb";
+                        		System.out.println(sizePostBlowout);
+                        		killConnection(host);
+                        		
+                        		JOptionPane.showMessageDialog(labelVersion, "MIRTH BLOWOUT RESULTS:\n=======================\n\n" + "Mirth DB Size PRE Blowout:\n" + sizePreBlowout + "\n\nMirth DB Size POST Blowout:\n" + sizePostBlowout);
+                        		logCommands.exportToLog("PRE BLOWOUT: " + sizePreBlowout);
+                        		logCommands.exportToLog("POST BLOWOUT: " + sizePostBlowout);
+                        		
+                        	}
+                            else if(serviceState == "STARTED")
+                        	{
+                        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                        	}
+                        	else
+                        	{
+                        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                        	}  
+                    	}           	
+                    }
+            	}
             }
-            else if(additionalFeatureOption == 1)
+            else if (selection == 3) 
             {
             	logCommands.exportToLog("Running information query against Mirth database. Please wait...");
             	String host = Main.returnHost();
@@ -1496,113 +1655,14 @@ public class applicationWindow extends JFrame implements ActionListener
                 
                 logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
             	JOptionPane.showMessageDialog(labelVersion, scrollPane, "Mirth-Derby Database Information:", JOptionPane.PLAIN_MESSAGE);
-            }
-            else if(additionalFeatureOption == 2)
-            {
-            	Object[] secondOptions = { "ON", "OFF" };
-                int sftpChoice = JOptionPane.showOptionDialog(labelVersion, "By default, if an SFTP connected channel is detected\nthe SFTP Restart channel will be added to\nthe full config and channel exports.\n\nTurn SFTP Restart channel generation On/Off?", "TOGGLE SFTP CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
-                if (sftpChoice == 1)
-                {
-                	logCommands.exportToLog("SFTP Restart Channel generation DISABLED");
-                	channelExport.setSFTPGeneration(false);
-                }
-                else if (sftpChoice == 0)
-                {
-                	logCommands.exportToLog("SFTP Restart Channel generation ENABLED");
-                	channelExport.setSFTPGeneration(true);
-                }
-                else
-                {
-                	logCommands.exportToLog("NO DECISION MADE FOR SFTP RESTART CHANNEL GENERATION");
-                	String genAction = "";
-                	if(channelExport.allowSFTPGeneration() == true)
-                	{
-                		genAction = "ENABLED";
-                	}
-                	else
-                	{
-                		genAction = "DISABLED";
-                	}
-                	logCommands.exportToLog("Generation action currently set to: " + genAction);
-                }
-            }
-            else if(additionalFeatureOption == 3)
-            {
-            	Object[] secondOptions = { "ENABLE", "DISABLE" };
-                int channelGenChoice = JOptionPane.showOptionDialog(labelVersion, "Mirth version 3.5 added a separate table containing pruning, enabled, and disabled\ninformation. In previous versions, that information was stored in the CHANNEL table.\nMCC generates backups differently for Mirth version <3.5.\n\nSelecting 'ENABLE' will forcefully use the newer channel generation\nfor the full and channel backups.\nSelecting 'DISABLE' will use the appropriate generation logic\nfor the Mirth version that's detected.\n\nNOTE: Use only if channel or full generation fails on Mirth versions <=3.5\naka: channel/full backup folder is empty, XML files don't open properly, etc.", "ENABLE NEW CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
-                if (channelGenChoice == 1)
-                {
-                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: DISABLED");
-                	channelExport.setForceNewChannelGeneration(false);
-                }
-                else if (channelGenChoice == 0)
-                {
-                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: ENABLED");
-                	channelExport.setForceNewChannelGeneration(true);
-                }
-                else if(channelGenChoice < 0)
-                {
-                	logCommands.exportToLog("CHANNEL GENERATION CHOICE: No action taken");
-                }
-            }
-            else if(additionalFeatureOption == 4)
-            {
-            	//added in 2.2.5
-            	Object[] secondOptions = { "CONTINUE", "CANCEL" };
-                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "Useful to run when you're unable to run the Mirth Admin Launcher.\nOften required when getting 'payload retrieval' errors.\n\nThis command will rename the current 'keystore.jks' file in the appdata folder.\nRestart the service to create a new 'keystore.jks' file\n\nNOTE: Ensure you have ran MCC.jar as admin via the batch file", "REPAIR KEYSTORE?", 0, 2, null, secondOptions, secondOptions[1]);
-                if (repairChoice < 0 || repairChoice == 1)
-                {
-                	logCommands.exportToLog("KEYSTORE REPAIR CANCELLED. No action was taken");
-                }
-                else if (repairChoice == 0)
-                {
-                	//added in 2.2.3
-                	boolean changedDirCheck = Main.changedDirTF();
-                	if(changedDirCheck == true)
-                	{
-                		logCommands.exportToLog("Keystore repair confirmed. Running...");
-                		String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
-                    	System.out.println("DB log To Repair: " + appdataPath);
-                    	
-                    	Main.repairKeystoreFile(appdataPath);     
-                	}
-                	else
-                	{
-                		if(serviceState == "STOPPED")
-                    	{
-                    		logCommands.exportToLog("Keystore repair confirmed. Running...");
-                        	String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
-                        	File keystoreFile = new File(appdataPath + "\\keystore.jks");
-                        	if(keystoreFile.exists())
-                        	{
-                        		System.out.println("Keystore File Detected");
-                        		System.out.println("Keystore To Repair: " + appdataPath + "keystore.jks");
-                        		Main.repairKeystoreFile(appdataPath);
-                        	}   
-                        	else
-                        	{
-                        		logCommands.exportToLog("Either the 'appdata' folder or the 'keystore.jks' file was not detected. No action performed");
-                        	}
-                        	                    	
-                    	}
-                        else if(serviceState == "STARTED")
-                    	{
-                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-                    	}
-                    	else
-                    	{
-                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-                    	}  
-                	} 
-                }
-            }
-            else if(additionalFeatureOption == 5)
+            } 
+            else if (selection == 4) 
             {
             	//added in 2.2.5
             	Object[] secondOptions = { "SEARCH CHANNELS", "CUSTOM SQL QUERY", "CANCEL" };
                 int sqlChoice = JOptionPane.showOptionDialog(labelVersion, "Functionality to run SQL Queries against the \nMirth database. Useful for:\n1. Viewing messages when the GUI is down\n2. Gathering specific information from tables\n3. Viewing raw data", "LAUNCH SEARCH?", 0, 2, null, secondOptions, secondOptions[1]);
                 System.out.println("SQL Search Choice: " + sqlChoice);
+                logCommands.exportDevLogItem("SQL Search Choice: " + sqlChoice);
                 if (sqlChoice < 0 || sqlChoice == 2)
                 {
                 	logCommands.exportToLog("SQL SEARCH CANCELLED. No action was taken");
@@ -1666,44 +1726,223 @@ public class applicationWindow extends JFrame implements ActionListener
                     	}  
                 	} 
                 }
-            }
-            else if(additionalFeatureOption == 6)
+            } 
+            else if (selection == 5) 
             {
-            	//currently un-used as of 2.2.5
+            	Object[] secondOptions = { "ON", "OFF" };
+                int sftpChoice = JOptionPane.showOptionDialog(labelVersion, "By default, if an SFTP connected channel is detected\nthe SFTP Restart channel will be added to\nthe full config and channel exports.\n\nTurn SFTP Restart channel generation On/Off?", "TOGGLE SFTP CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (sftpChoice == 1)
+                {
+                	logCommands.exportToLog("SFTP Restart Channel generation DISABLED");
+                	channelExport.setSFTPGeneration(false);
+                }
+                else if (sftpChoice == 0)
+                {
+                	logCommands.exportToLog("SFTP Restart Channel generation ENABLED");
+                	channelExport.setSFTPGeneration(true);
+                }
+                else
+                {
+                	logCommands.exportToLog("NO DECISION MADE FOR SFTP RESTART CHANNEL GENERATION");
+                	String genAction = "";
+                	if(channelExport.allowSFTPGeneration() == true)
+                	{
+                		genAction = "ENABLED";
+                	}
+                	else
+                	{
+                		genAction = "DISABLED";
+                	}
+                	logCommands.exportToLog("Generation action currently set to: " + genAction);
+                }
+            } 
+            else if (selection == 6) 
+            {
+            	Object[] secondOptions = { "ENABLE", "DISABLE" };
+                int channelGenChoice = JOptionPane.showOptionDialog(labelVersion, "Mirth version 3.5 added a separate table containing pruning, enabled, and disabled\ninformation. In previous versions, that information was stored in the CHANNEL table.\nMCC generates backups differently for Mirth version <3.5.\n\nSelecting 'ENABLE' will forcefully use the newer channel generation\nfor the full and channel backups.\nSelecting 'DISABLE' will use the appropriate generation logic\nfor the Mirth version that's detected.\n\nNOTE: Use only if channel or full generation fails on Mirth versions <=3.5\naka: channel/full backup folder is empty, XML files don't open properly, etc.", "ENABLE NEW CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (channelGenChoice == 1)
+                {
+                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: DISABLED");
+                	channelExport.setForceNewChannelGeneration(false);
+                }
+                else if (channelGenChoice == 0)
+                {
+                	logCommands.exportToLog("NEW (Mirth Version >3.5) Generation: ENABLED");
+                	channelExport.setForceNewChannelGeneration(true);
+                }
+                else if(channelGenChoice < 0)
+                {
+                	logCommands.exportToLog("CHANNEL GENERATION CHOICE: No action taken");
+                }
+            } 
+            else if (selection == 7) 
+            {
+            	//added in 2.2.5
             	Object[] secondOptions = { "CONTINUE", "CANCEL" };
-                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "A Lite Channel Export entails:\n1. The Mirth Service does not have to be stopped\n2. The Channel Export will not have any metadata (pruning settings, enable/disabled, etc.)\n3. Exports Code Template libraries", "PERFORM LITE CHANNEL EXPORT?", 0, 2, null, secondOptions, secondOptions[1]);
+                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "Useful to run when you're unable to run the Mirth Admin Launcher.\nOften required when getting 'payload retrieval' errors.\n\nThis command will rename the current 'keystore.jks' file in the appdata folder.\nRestart the service to create a new 'keystore.jks' file\n\nNOTE: Ensure you have ran MCC.jar as admin via the batch file", "REPAIR KEYSTORE?", 0, 2, null, secondOptions, secondOptions[1]);
                 if (repairChoice < 0 || repairChoice == 1)
                 {
-                	logCommands.exportToLog("EXPORT CANCELLED. No action was taken");
+                	logCommands.exportToLog("KEYSTORE REPAIR CANCELLED. No action was taken");
                 }
                 else if (repairChoice == 0)
                 {
-                	Main.setBackupFolder();
-                	String host = Main.returnHost();
-                	SQLCommand.liteChannelExport(host);                	
-                	
-                	//exports code templates
-                	try 
+                	//added in 2.2.3
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
                 	{
-						channelExport.exportCodeTemplates(host);
-					} 
-                	catch (FileNotFoundException e1) 
+                		logCommands.exportToLog("Keystore repair confirmed. Running...");
+                		String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
+                    	System.out.println("DB log To Repair: " + appdataPath);
+                    	logCommands.exportDevLogItem("DB log To Repair: " + appdataPath);
+                    	
+                    	Main.repairKeystoreFile(appdataPath);     
+                	}
+                	else
                 	{
-						e1.printStackTrace();
-					}
-                	
-                	logCommands.exportToLog("Lite Channel Backup Complete");
-                	logCommands.exportToLog("Files exported to " + Main.getBackupFolder()+"\\channelBackup\\");
-                    setLogWindow();
-                	Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
+                		if(serviceState == "STOPPED")
+                    	{
+                    		logCommands.exportToLog("Keystore repair confirmed. Running...");
+                        	String appdataPath = Main.returnHost().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "");
+                        	File keystoreFile = new File(appdataPath + "\\keystore.jks");
+                        	if(keystoreFile.exists())
+                        	{
+                        		System.out.println("Keystore File Detected");
+                        		System.out.println("Keystore To Repair: " + appdataPath + "keystore.jks");
+                        		logCommands.exportDevLogItem("Keystore File Detected");
+                        		logCommands.exportDevLogItem("Keystore To Repair: " + appdataPath + "keystore.jks");
+                        		Main.repairKeystoreFile(appdataPath);
+                        	}   
+                        	else
+                        	{
+                        		logCommands.exportToLog("Either the 'appdata' folder or the 'keystore.jks' file was not detected. No action performed");
+                        	}
+                        	                    	
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	} 
                 }
-            }
-            else if(additionalFeatureOption < 0)
+            } 
+            else 
             {
-                System.out.println("CANCELLED");
-                logCommands.exportToLog("No additional function chosen");
-            }               		
+                //Cancel was pressed
+            	logCommands.exportToLog("No additional function chosen");
+            }
         }
+    }
+    
+    //added in 2.2.7 to reformat the MORE FUNCTIONS menu
+    private static int showGroupedMoreActionsDialog() 
+    {
+        java.awt.Window parent = javax.swing.SwingUtilities.getWindowAncestor(labelVersion);
+        final JDialog dialog = new JDialog(parent, "MORE FEATURES", JDialog.ModalityType.APPLICATION_MODAL);
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+
+        //Database Functions
+        JLabel dbHeader = new JLabel("Database Functions:");
+        dbHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(dbHeader);
+
+        JPanel dbPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        dbPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btn1 = new JButton("REPAIR CORRUPT DB");
+        JButton btn2 = new JButton("MIRTH BLOWOUT");
+        JButton btn3 = new JButton("DATABASE OVERVIEW");
+        JButton btn4 = new JButton("SQL SEARCH");
+        dbPanel.add(btn1);
+        dbPanel.add(btn2);
+        dbPanel.add(btn3);
+        dbPanel.add(btn4);
+        mainPanel.add(dbPanel);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Generation Settings
+        JLabel genHeader = new JLabel("Generation Settings:");
+        genHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(genHeader);
+
+        JPanel genPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        genPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btn5 = new JButton("TOGGLE SFTP ON/OFF");
+        JButton btn6 = new JButton("FORCE NEW CHANNEL GEN");
+        genPanel.add(btn5);
+        genPanel.add(btn6);
+        mainPanel.add(genPanel);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Other
+        JLabel otherHeader = new JLabel("Other:");
+        otherHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(otherHeader);
+
+        JPanel otherPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        otherPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btn7 = new JButton("REPAIR KEYSTORE");
+        otherPanel.add(btn7);
+        mainPanel.add(otherPanel);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Cancel button at bottom
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.setForeground(new java.awt.Color(240,40,40));
+        btnCancel.setBackground(new java.awt.Color(255, 238, 238));
+        bottomPanel.add(btnCancel);
+        mainPanel.add(bottomPanel);
+
+        dialog.getContentPane().add(mainPanel);
+        dialog.pack();
+        
+        if (parent != null) 
+        {
+            dialog.setLocationRelativeTo(parent);
+        } 
+        else 
+        {
+            dialog.setLocationRelativeTo(null);
+        }
+
+        final int[] result = { -1 };
+
+        ActionListener al = ev -> {
+            Object src = ev.getSource();
+            if (src == btn1) result[0] = 1;
+            else if (src == btn2) result[0] = 2;
+            else if (src == btn3) result[0] = 3;
+            else if (src == btn4) result[0] = 4;
+            else if (src == btn5) result[0] = 5;
+            else if (src == btn6) result[0] = 6;
+            else if (src == btn7) result[0] = 7;
+            else if (src == btnCancel) result[0] = -1;
+            dialog.dispose();
+        };
+
+        btn1.addActionListener(al);
+        btn2.addActionListener(al);
+        btn3.addActionListener(al);
+        btn4.addActionListener(al);
+        btn5.addActionListener(al);
+        btn6.addActionListener(al);
+        btn7.addActionListener(al);
+        btnCancel.addActionListener(al);
+
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
+
+        return result[0];
     }
     
     //added in 2.2.4 - checks the running directory for any MCC configuration files, then applies the settings
@@ -1715,11 +1954,13 @@ public class applicationWindow extends JFrame implements ActionListener
     	if(mccConfig.exists())
     	{
     		System.out.println("MCC-Settings.config file detected");
+    		logCommands.exportDevLogItem("MCC-Settings.config file detected");
     		applySettingsFromConfigFile(currentDir);
     	}
     	else
     	{
     		System.out.println("No MCC-Settings.config file detected");
+    		logCommands.exportDevLogItem("No MCC-Settings.config file detected");
     	}
     	
     	return currentDir;
@@ -1729,6 +1970,7 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	String currentDir = System.getProperty("user.dir");
     	System.out.println("Current dir hosting MCC.jar: " + currentDir);
+    	logCommands.exportDevLogItem("Current dir hosting MCC.jar: " + currentDir);
     	
     	return currentDir;
     }
@@ -1749,7 +1991,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	if(line.contains("Theme: "))
                 	{
                 		String targetTheme = line.replace("Theme: ", "");
-                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS"};
+                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT"};
                 		for(int mythemes=0;mythemes<themes.length;mythemes++)
                 		{
                 			if(targetTheme.equals(themes[mythemes]))
@@ -1787,6 +2029,7 @@ public class applicationWindow extends JFrame implements ActionListener
             //If the file exists, it will overwrite the content
             Files.write(mccFile, textToWrite.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             System.out.println("Config file written successfully!");
+            logCommands.exportDevLogItem("Config file written successfully!");
         } 
     	catch (IOException e) 
     	{
@@ -1794,6 +2037,11 @@ public class applicationWindow extends JFrame implements ActionListener
         }
     	
     	return "file written";
+    }
+    
+    public static boolean returnDevLogChoice()
+    {
+    	return devLogSet;
     }
     
     public static String pushAlertThrough()
@@ -1804,7 +2052,13 @@ public class applicationWindow extends JFrame implements ActionListener
     
     public static String displayDupeSQLWindowMessage()
     {
-    	JOptionPane.showMessageDialog(labelVersion, "ERROR: Unable to open SQL Search Window.\n\nOnly 1 SQL Search window can be open at a time.\nPlease close the open window and try again.");
+    	JOptionPane.showMessageDialog(labelVersion, "ERROR: Unable to open SQL Search Window.\n\nOnly 1 SQL Search window can be open at a time.\nPlease close the open window and try again.", "SQL SEARCH WARNING" , JOptionPane.ERROR_MESSAGE);
     	return "Window opened";
+    }
+    
+    public static boolean setIfBackupWasRun()
+    {
+    	backupRunForBlowout = true;
+    	return backupRunForBlowout;
     }
 }

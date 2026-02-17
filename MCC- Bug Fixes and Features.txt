@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.6
-Last Update: 11/7/25
+Current Version: 2.2.7
+Last Update: 2/17/26
 =================================
 
 Version 2.1.0:
@@ -52,3 +52,10 @@ Version 2.2.6:
 -Added button to "CUSTOM SQL QUERY" to show a basic table structure of the Mirth database.
 -Added function to read the mirth.properties file (if it exists) for the DB path in the event that the mirthdb folder isn't automatically detected.
 -Fixed bug that allowed both the "SEARCH CHANNELS" and "CUSTOM SQL QUERY" windows to be open at the same time.
+
+Version 2.2.7:
+-Updated MCC-SIDEKICK code with the fix in 2.2.5 regarding skipping the last channel's connection type. Fixed it not being evaluated since it was accidentally skipped
+-Implemented the 'devlog' command that exports the System Print statements to the MCC-TRACE log file as well as the console's window (denoted with ">>> DEVLOG:- ")
+-Added the ability to perform a "Mirth Blowout" via the "MORE FUNCTIONS" menu. This calls a utility to compress the message tables, freeing up hard drive space
+-Implemented a "backup check" that users must perform before proceeding with the Mirth Blowout option
+-Reformatted the "MORE FUNCTIONS" menu and catagorized the additional functions

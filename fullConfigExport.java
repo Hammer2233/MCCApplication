@@ -36,6 +36,7 @@ public class fullConfigExport
 
     public static String exportChannelGroups(String host) throws SQLException, FileNotFoundException
     {
+    	applicationWindow.setIfBackupWasRun();
         backupFolderPath = Main.getBackupFolder();
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
@@ -62,6 +63,7 @@ public class fullConfigExport
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
         }
         catch (Exception e) 
@@ -110,6 +112,7 @@ public class fullConfigExport
                     catch (FileNotFoundException fileExcept2) 
                     {
                         System.out.println("I DIDN'T FIND THE FILE");
+                        logCommands.exportDevLogItem("I DIDN'T FIND THE FILE");
                     }
                 }
             } 
@@ -117,6 +120,7 @@ public class fullConfigExport
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
         }
         catch (Exception e) 
@@ -154,6 +158,7 @@ public class fullConfigExport
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
         }
         catch (Exception e) 
@@ -216,6 +221,7 @@ public class fullConfigExport
         	if(channelTagText.trim().equals("<set/>"))
         	{
         		System.out.println("NO CHANNEL TAGS DETECTED");
+        		logCommands.exportDevLogItem("NO CHANNEL TAGS DETECTED");
         		masterMirthExport.add("<channelTags/>");
         	}
         	else
@@ -353,6 +359,7 @@ public class fullConfigExport
         	else
         	{
         		System.out.println("I COULDN'T FIND THE " + targetFiles[fbf] + " FILE");
+        		logCommands.exportDevLogItem("I COULDN'T FIND THE " + targetFiles[fbf] + " FILE");
         	}
         }      
         
@@ -419,6 +426,7 @@ public class fullConfigExport
         //added in 2.2.5 - Grabs a copy of the mirth.properties file from the "C:\Program Files\Mirth Connect\conf" folder path
         String propertiesFilePath = host.trim().replace("jdbc:derby:", "").replace(";", "").replace("mirthdb", "").replace("appdata", "") + "conf\\mirth.properties";
         System.out.println("TARGET PROPERTIES FILE: " + propertiesFilePath);
+        logCommands.exportDevLogItem("TARGET PROPERTIES FILE: " + propertiesFilePath);
         File propertiesFile = new File(propertiesFilePath);
         if(propertiesFile.exists())
         {
@@ -466,6 +474,7 @@ public class fullConfigExport
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
             masterMirthExport.add("</globalScripts>");
         }
@@ -522,6 +531,7 @@ public class fullConfigExport
         	else
         	{
         		System.out.println("File '" + pluginPropertiesFiles[ii] + "' not found");
+        		logCommands.exportDevLogItem("File '" + pluginPropertiesFiles[ii] + "' not found");
         	}
         }  
         
@@ -561,6 +571,7 @@ public class fullConfigExport
             {
                 System.out.println("FAILED MISERABLY");
                 System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
             }
             versionInfo = "\""+versionInfo+"\"";
         }
@@ -594,6 +605,7 @@ public class fullConfigExport
 	        {
 	        	System.out.println("FAILED MISERABLY");
 	        	System.out.println(sqlExcept);
+	        	logCommands.exportDevLogItem(sqlExcept.toString());
 	        }
         }
 

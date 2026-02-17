@@ -118,10 +118,12 @@ public class SQLSearch extends JFrame
     		if(isWindowOpen == false)
     		{
     			System.out.println("Mirth database version is 3.5 or higher");
+    			logCommands.exportDevLogItem("Mirth database version is 3.5 or higher");
         		
         		setTitle("Search Results");
                 chosenQuery = choice;
                 System.out.println("Window Opened");
+                logCommands.exportDevLogItem("Window Opened");
                 Main.setWindowStatus(true);
                 
                 if(choice == 0)
@@ -149,16 +151,19 @@ public class SQLSearch extends JFrame
                     {
                         Main.setWindowStatus(false);
                         System.out.println("SQLSearch window closed! isWindowOpen = " + isWindowOpen);
+                        logCommands.exportDevLogItem("SQLSearch window closed! isWindowOpen = " + isWindowOpen);
                     }
                 });
                 
                 if(chosenQuery == 0)
                 {
-                	System.out.println("Chosen Query: Channel Message Search"); 
+                	System.out.println("Chosen Query: Channel Message Search");
+                	logCommands.exportDevLogItem("Chosen Query: Channel Message Search");
                 }
                 else if(chosenQuery == 1)
                 {
-                	System.out.println("Chosen Query: Custom SQL Query"); 
+                	System.out.println("Chosen Query: Custom SQL Query");
+                	logCommands.exportDevLogItem("Chosen Query: Custom SQL Query");
                 }
 
                 setVisible(true);
@@ -304,6 +309,7 @@ public class SQLSearch extends JFrame
                     if(cellValue == null)
                     {
                     	System.out.println("Selected Cell Value: null");
+                    	logCommands.exportDevLogItem("Selected Cell Value: null");
                     	focusedResultSpace.setText("");
                     }
                     else
@@ -324,6 +330,7 @@ public class SQLSearch extends JFrame
                 else 
                 {
                     System.out.println("No cell selected.");
+                    logCommands.exportDevLogItem("No cell selected.");
                 }
             }
         });
@@ -394,6 +401,7 @@ public class SQLSearch extends JFrame
                 public void actionPerformed(java.awt.event.ActionEvent e) 
                 {
                     System.out.println("Local Channel ID: " + activeChannelLocalIDs.get(currentChannel));
+                    logCommands.exportDevLogItem("Local Channel ID: " + activeChannelLocalIDs.get(currentChannel));
                     chosenChannel = Integer.parseInt((String) activeChannelLocalIDs.get(currentChannel));
                     loadDataChannels();
                 }
@@ -440,6 +448,7 @@ public class SQLSearch extends JFrame
     	
     	table.setModel(model);
         System.out.println("Number of rows in model: " + model.getRowCount());
+        logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
     }
     
     private void loadDataChannelsOld() 
@@ -501,6 +510,7 @@ public class SQLSearch extends JFrame
 
             table.setModel(model);
             System.out.println("Number of rows in model: " + model.getRowCount());
+            logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
         } 
         catch (SQLException e) 
         {
@@ -615,6 +625,7 @@ public class SQLSearch extends JFrame
 
             table.setModel(model);
             System.out.println("Number of rows in model: " + model.getRowCount());
+            logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
         } 
         catch (SQLException e) 
         {
@@ -767,31 +778,37 @@ public class SQLSearch extends JFrame
         	if(startDateText.isEmpty() && endDateText.isEmpty() && containsText.isEmpty())
         	{
         		System.out.println("No criteria entered. searching entire channel");
+        		logCommands.exportDevLogItem("No criteria entered. searching entire channel");
 				searchChannelCriteria("null", "null", "null");
         	}
         	else if(startDateText.isEmpty() && endDateText.isEmpty())
         	{
         		System.out.println("Search text not empty. Searching based on 'containsText'");
+        		logCommands.exportDevLogItem("Search text not empty. Searching based on 'containsText'");
 				searchChannelCriteria("null", "null", containsText);
         	}
         	else if(validStart == true && containsText.isEmpty() && endDateText.isEmpty())
         	{
         		System.out.println("Start date valid and containsText is empty. Searching by start date");
+        		logCommands.exportDevLogItem("Start date valid and containsText is empty. Searching by start date");
 				searchChannelCriteria(startDateText, "null", "null");
         	}
         	else if(validStart == true && !containsText.isEmpty() && endDateText.isEmpty())
         	{
         		System.out.println("Start date valid and containsText has data. Searching by start date and search text");
+        		logCommands.exportDevLogItem("Start date valid and containsText has data. Searching by start date and search text");
 				searchChannelCriteria(startDateText, "null", containsText);
         	}
         	else if(validEnd == true && containsText.isEmpty() && startDateText.isEmpty())
         	{
         		System.out.println("End date valid and containsText is empty. Searching by end date");
+        		logCommands.exportDevLogItem("End date valid and containsText is empty. Searching by end date");
 				searchChannelCriteria("null", endDateText, "null");
         	}
         	else if(validEnd == true && !containsText.isEmpty() && startDateText.isEmpty())
         	{
         		System.out.println("End date valid and containsText has data. Searching by end date and search text");
+        		logCommands.exportDevLogItem("End date valid and containsText has data. Searching by end date and search text");
 				searchChannelCriteria("null", endDateText, containsText);
         	}
         	else if(validStart == true && validEnd == true)
@@ -799,6 +816,7 @@ public class SQLSearch extends JFrame
         		if(Integer.valueOf(startDateText) > Integer.valueOf(endDateText))
         		{
         			System.out.println("Start date cannot be greater than the end date");
+        			logCommands.exportDevLogItem("Start date cannot be greater than the end date");
         		}
         		else
         		{
@@ -810,11 +828,13 @@ public class SQLSearch extends JFrame
         			if(containsText.isEmpty())
         			{
         				System.out.println("Both dates valid and containsText is empty. Searching by dates");
+        				logCommands.exportDevLogItem("Both dates valid and containsText is empty. Searching by dates");
         				searchChannelCriteria(startDateText, endDateText, "null");
         			}
         			else
         			{
         				System.out.println("Both dates valid and containsText has data. Searching by dates and search text");
+        				logCommands.exportDevLogItem("Both dates valid and containsText has data. Searching by dates and search text");
         				searchChannelCriteria(startDateText, endDateText, containsText);
         			}        			
         		}
@@ -827,6 +847,9 @@ public class SQLSearch extends JFrame
     	System.out.println("Start Date: '" + startDate + "'");
     	System.out.println("End Date: '" + endDate + "'");
     	System.out.println("Search Text: '" + searchText + "'");
+    	logCommands.exportDevLogItem("Start Date: '" + startDate + "'");
+    	logCommands.exportDevLogItem("End Date: '" + endDate + "'");
+    	logCommands.exportDevLogItem("Search Text: '" + searchText + "'");
     	
     	//first check is to see if everything is null. If so, it copies the standard arraylists into the search ones
     	if(startDate.equals("null") && endDate.equals("null") && searchText.equals("null"))
@@ -891,6 +914,7 @@ public class SQLSearch extends JFrame
     	if(!endDate.equals("null") && startDate.equals("null"))
     	{
     		System.out.println("There is an end date but no start date");
+    		logCommands.exportDevLogItem("There is an end date but no start date");
     		for(int rdc=0;rdc<receivedDates.size();rdc++)
     		{
     			String[] splitTime = receivedDates.get(rdc).toString().split(" ");
@@ -922,6 +946,7 @@ public class SQLSearch extends JFrame
     	{
     		//in this case, there is a start date and an end date. We will remove any results in the array before the end date
     		System.out.println("There is a start and end date");
+    		logCommands.exportDevLogItem("There is a start and end date");
     		    		
     		for(int rdc=0;rdc<receivedDates.size();rdc++)    		
     		{
@@ -944,9 +969,11 @@ public class SQLSearch extends JFrame
     	{
     		//updated 2.2.6 searching
     		System.out.println("Searching by text");
+    		logCommands.exportDevLogItem("Searching by text");
     		if(!endDate.equals("null") || !startDate.equals("null"))
     		{
     			System.out.println("Searching existing IDs since a date was populated");
+    			logCommands.exportDevLogItem("Searching existing IDs since a date was populated");
     			ArrayList goodIDs = new ArrayList();
     			//There is either a start date, end date, or both. We will search the contents associated with the current validMsgIDs array and remove the IDs not containing the search text
     			for(int mts=0;mts<validMsgIDs.size();mts++)
@@ -976,6 +1003,7 @@ public class SQLSearch extends JFrame
     		{
     			//There was no start and end dates, so we will search through the whole list, populating the validMsgIDs array
     			System.out.println("Searching all IDs since a date was not populated");
+    			logCommands.exportDevLogItem("Searching all IDs since a date was not populated");
     			//iterates over the full messageIDs
 				for(int getContent=0;getContent<messageIDs.size();getContent++)
 				{
@@ -985,6 +1013,7 @@ public class SQLSearch extends JFrame
 						if(!validMsgIDs.contains(messageIDs.get(getContent)))
 						{
 							System.out.println("Added ID: " + messageIDs.get(getContent));
+							logCommands.exportDevLogItem("Added ID: " + messageIDs.get(getContent));
 							validMsgIDs.add(messageIDs.get(getContent));
 						}
 					}
@@ -994,6 +1023,7 @@ public class SQLSearch extends JFrame
     	else
     	{
     		System.out.println("No text to search by");
+    		logCommands.exportDevLogItem("No text to search by");
     	}
     	
     	System.out.println("================= Array Sizes Check =================");
@@ -1081,6 +1111,7 @@ public class SQLSearch extends JFrame
         if (input == null || input.isEmpty()) 
         {
             System.out.println("Input is empty.");
+            logCommands.exportDevLogItem("Input is empty.");
             return false;
         }
 
@@ -1088,6 +1119,7 @@ public class SQLSearch extends JFrame
         if (!input.matches("^\\d{8}$")) 
         {
             System.out.println("Input does not match required format (YYYYMMDD).");
+            logCommands.exportDevLogItem("Input does not match required format (YYYYMMDD).");
             return false;
         }
         
@@ -1130,6 +1162,7 @@ public class SQLSearch extends JFrame
     	
     	table.setModel(model);
         System.out.println("Number of rows in model: " + model.getRowCount());
+        logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
     }
     
     private static class returnTableNames implements ActionListener

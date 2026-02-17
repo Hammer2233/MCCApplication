@@ -16,6 +16,9 @@ public class logCommands
     private static boolean checkLogNeeded = true;
     //Established print writer
     private static PrintWriter logThis;
+    
+    //new in 2.2.7 - Checks if devLog items should be exported
+    private static boolean devLogItems = false;
 
     public static String checkLogFile() throws FileNotFoundException
     {
@@ -55,6 +58,7 @@ public class logCommands
             catch (FileNotFoundException e) 
             {
                 System.out.println("FAILED TO CHECK LOG FILE");
+                logCommands.exportDevLogItem("FAILED TO CHECK LOG FILE");
             }
         }
 
@@ -87,6 +91,7 @@ public class logCommands
             catch (FileNotFoundException e) 
             {
                 System.out.println("FAILED TO CHECK LOG FILE");
+                logCommands.exportDevLogItem("FAILED TO CHECK LOG FILE");
             }
         }
         logThis.print(getDateTime()+ " " + given + "\n");
@@ -109,6 +114,7 @@ public class logCommands
             catch (FileNotFoundException e) 
             {
                 System.out.println("FAILED TO CHECK LOG FILE");
+                logCommands.exportDevLogItem("FAILED TO CHECK LOG FILE");
             }
         }
         logThis.print(getDateTime()+ " " + given + "\n");
@@ -116,6 +122,22 @@ public class logCommands
         logThis.flush();
         applicationWindow.setLogWindow();
         return "";
+    }
+    
+    public static String exportDevLogItem(String given)
+    {
+    	getDevLogNeed();
+    	if(devLogItems == true)
+    	{
+    		exportToLog(">>> DEVLOG:- " + given);
+    	}
+    	return "";
+    }
+    
+    public static String getDevLogNeed()
+    {
+    	devLogItems = applicationWindow.returnDevLogChoice();
+    	return "choice set";
     }
 
 
