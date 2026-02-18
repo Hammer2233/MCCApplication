@@ -36,6 +36,7 @@ public class fullConfigExport
 
     public static String exportChannelGroups(String host) throws SQLException, FileNotFoundException
     {
+    	applicationWindow.setIfBackupWasRun();
         backupFolderPath = Main.getBackupFolder();
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {

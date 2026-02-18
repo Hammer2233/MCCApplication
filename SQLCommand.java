@@ -32,6 +32,8 @@ public class SQLCommand
     
     private static ArrayList channelName = new ArrayList();
     private static ArrayList channelXML = new ArrayList();
+    
+    private static ArrayList channelsToCompress = new ArrayList();
 
     public static String checkUN(String host)
     {
@@ -630,7 +632,7 @@ public class SQLCommand
     	return dbInformationText;
     }
     
-    private static long getFolderSize(File folder) 
+    static long getFolderSize(File folder) 
     {
         long length = 0;
         File[] files = folder.listFiles();
@@ -834,6 +836,58 @@ public class SQLCommand
 		channelStatusList.clear();
 		channelNameList.clear();
     	return "cleared";
+    }
+    
+    public static String channelsForCompression(String host)
+    {	
+    	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+    		String query = "select tablename from sys.systables where tabletype = 'T' and tablename like 'D_MC%' and tablename not like 'D_MCM%'";
+    		ResultSet compressTables = stmt.executeQuery(query);
+    		
+    		while (compressTables.next())
+    		{
+    			channelsToCompress.add(compressTables.getString(1));
+    		}
+        } 
+    	catch (SQLException e) 
+    	{
+			System.out.println(e);
+			logCommands.exportDevLogItem(e.toString());
+		}
+        	
+    	return "ArrayList populated";
+    }
+    
+    public static int numberOfChannelsToCompress()
+    {
+    	int size = channelsToCompress.size();
+    	return size;
+    }
+    
+    public static String compressCurrentTable(String name, String host)
+    {
+    	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+    		String query = "call SYSCS_UTIL.SYSCS_COMPRESS_TABLE('APP','" + name.toUpperCase() + "', 1)";
+    		stmt.executeUpdate(query);
+    	} 
+    	catch (SQLException e) 
+    	{
+			System.out.println(e);
+			logCommands.exportDevLogItem(e.toString());
+			if(e.toString().contains("An SQL data change is not permitted for a read-only connection, user or database"))
+			{
+				logCommands.exportToLog("Failed to compress table '" + name + "'. Permission based error thrown. Try running MCC as admin");
+			}
+		}
+    	
+    	return "compressed";
+    }
+    
+    public static String nameOfCurrentTable(int curr)
+    {
+    	return channelsToCompress.get(curr).toString();
     }
     
     public static String liteChannelExport(String host)
