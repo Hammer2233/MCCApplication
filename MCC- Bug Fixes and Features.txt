@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.7
-Last Update: 2/17/26
+Current Version: 2.2.8
+Last Update: 3/26/26
 =================================
 
 Version 2.1.0:
@@ -59,3 +59,9 @@ Version 2.2.7:
 -Added the ability to perform a "Mirth Blowout" via the "MORE FUNCTIONS" menu. This calls a utility to compress the message tables, freeing up hard drive space
 -Implemented a "backup check" that users must perform before proceeding with the Mirth Blowout option
 -Reformatted the "MORE FUNCTIONS" menu and catagorized the additional functions
+
+Version 2.2.8:
+-Added functionality to generate the 'MCC- Backup Channel', which takes backups of all Mirth channels and configurations without having to stop the service
+-Added new option under "MORE FUNCTIONS" to toggle the 'MCC- Backup Channel' generation on or off
+-Fixed issue where the SQL Search windows would not open on top of the main MCC application's location on screen
+-Added alerts if MCC is detected to be in a zip folder

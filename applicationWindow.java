@@ -118,7 +118,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.7");
+        setTitle("MCC -2.2.8");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -931,7 +931,7 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint"};
+            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint", "GameCube"};
                 int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
                 if(changeThemeChoice >=0)
                 {
@@ -1434,7 +1434,7 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	else if(chosenTheme == 7)
     	{    		
-    		//Coral theme    		
+    		//Mint theme    		
     		logTextArea.setBackground(new java.awt.Color(186,255,216));
     		logTextArea.setForeground(Color.BLACK);
     		cmdPWLabel.setForeground(Color.BLACK);
@@ -1469,6 +1469,44 @@ public class applicationWindow extends JFrame implements ActionListener
     		
     		moreFunctions.setForeground(Color.WHITE);
     		moreFunctions.setBackground(new java.awt.Color(255,69,181));
+    	}
+    	else if(chosenTheme == 8)
+    	{    		
+    		//GameCube theme    		
+    		logTextArea.setBackground(new java.awt.Color(224,170,255));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(123,44,191));
+    		middleButtonPanel.setBackground(new java.awt.Color(123,44,191));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(123,44,191));
+    		bottomButtonPanel.setBackground(new java.awt.Color(123,44,191));
+    		westPanel.setBackground(new java.awt.Color(123,44,191));
+    		centerPanel.setBackground(new java.awt.Color(90,24,154));
+    		imagePanel.setBackground(new java.awt.Color(123,44,191));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.BLACK);
+    		archiveChannels.setBackground(new java.awt.Color(255, 186, 56));
+
+    		fullMirthExport.setForeground(Color.WHITE);
+    		fullMirthExport.setBackground(new java.awt.Color(50, 0, 227));
+
+    		checkUsernameButton.setForeground(Color.BLACK);
+    		checkUsernameButton.setBackground(new java.awt.Color(224,224,224));
+
+    		changeUNandPW.setForeground(Color.BLACK);
+    		changeUNandPW.setBackground(new java.awt.Color(224,224,224));
+
+    		changeBackupPath.setForeground(Color.BLACK);
+    		changeBackupPath.setBackground(new java.awt.Color(56, 255, 80));
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(new java.awt.Color(255,68,68));
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(new java.awt.Color(255,251,0));
     	}
     	return "theme changed";
     }
@@ -1558,6 +1596,7 @@ public class applicationWindow extends JFrame implements ActionListener
             	System.out.println("Doing a blowout");
             	if(backupRunForBlowout == false)
             	{
+            		System.out.println("Full backup wasn't taken. Popup displayed");
             		JOptionPane.showMessageDialog(labelVersion, "WARNING! READ BEFORE PROCEEDING!\n\nA Full Configuration Export must be ran before blowing out\na Mirth database. Please use the \"EXPORT MIRTH CONFIG\"\nbutton to take a backup.\n\nRun this command again afterwards for further options.\n", "BACKUP REQUIRED BEFORE BLOWOUT", JOptionPane.ERROR_MESSAGE);
             		logCommands.exportToLog("A full Mirth Configuration export must be taken before a blowout can be performed.");
             		logCommands.exportToLog("Please take a backup before proceeding, then run the command again.");
@@ -1658,6 +1697,13 @@ public class applicationWindow extends JFrame implements ActionListener
             } 
             else if (selection == 4) 
             {
+            	//Added in 2.2.8
+            	applicationWindow mainMCC = (applicationWindow) javax.swing.SwingUtilities.getWindowAncestor(labelVersion);
+            	if (mainMCC == null) 
+            	{
+            	    mainMCC = (applicationWindow) javax.swing.JFrame.getFrames()[0];
+            	}
+            	
             	//added in 2.2.5
             	Object[] secondOptions = { "SEARCH CHANNELS", "CUSTOM SQL QUERY", "CANCEL" };
                 int sqlChoice = JOptionPane.showOptionDialog(labelVersion, "Functionality to run SQL Queries against the \nMirth database. Useful for:\n1. Viewing messages when the GUI is down\n2. Gathering specific information from tables\n3. Viewing raw data", "LAUNCH SEARCH?", 0, 2, null, secondOptions, secondOptions[1]);
@@ -1670,9 +1716,10 @@ public class applicationWindow extends JFrame implements ActionListener
                 else if (sqlChoice == 0)
                 {
                 	boolean changedDirCheck = Main.changedDirTF();
+                	
                 	if(changedDirCheck == true)
                 	{
-                		new SQLSearch(0);   
+                		new SQLSearch(mainMCC, 0);   
                 	}
                 	else
                 	{
@@ -1683,7 +1730,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 				logCommands.exportToLog("Channel Message Search enabled. Running...");
                 			}
                     		
-                    		new SQLSearch(0);
+                    		new SQLSearch(mainMCC, 0);
                         	                    	
                     	}
                         else if(serviceState == "STARTED")
@@ -1702,7 +1749,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	boolean changedDirCheck = Main.changedDirTF();
                 	if(changedDirCheck == true)
                 	{
-                		new SQLSearch(1);   
+                		new SQLSearch(mainMCC, 1);   
                 	}
                 	else
                 	{
@@ -1712,7 +1759,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 			{
                 				logCommands.exportToLog("SQL Search enabled. Running...");
                 			}                    		
-                    		new SQLSearch(1);
+                    		new SQLSearch(mainMCC, 1);
                         	                    	
                     	}
                         else if(serviceState == "STARTED")
@@ -1830,6 +1877,35 @@ public class applicationWindow extends JFrame implements ActionListener
                 	} 
                 }
             } 
+            else if(selection == 8)
+            {
+            	Object[] secondOptions = { "ON", "OFF" };
+                int autoBackupChoice = JOptionPane.showOptionDialog(labelVersion, "By default, if the 'MCC- Backup Channel' is\nnot present in the Mirth database, it will\nbe added to the full config and channel exports.\n\nTurn 'MCC- Backup Channel' generation On/Off?", "TOGGLE AUTO BACKUP CHANNEL GENERATION?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (autoBackupChoice == 1)
+                {
+                	logCommands.exportToLog("MCC- Backup Channel generation DISABLED");
+                	channelExport.setAutoBackupChannelGeneration(false);
+                }
+                else if (autoBackupChoice == 0)
+                {
+                	logCommands.exportToLog("MCC- Backup Channel generation ENABLED");
+                	channelExport.setAutoBackupChannelGeneration(true);
+                }
+                else
+                {
+                	logCommands.exportToLog("NO DECISION MADE FOR AUTO BACKUP CHANNEL GENERATION");
+                	String genAction = "";
+                	if(channelExport.allowAutoBackupChannelGeneration() == true)
+                	{
+                		genAction = "ENABLED";
+                	}
+                	else
+                	{
+                		genAction = "DISABLED";
+                	}
+                	logCommands.exportToLog("Generation action currently set to: " + genAction);
+                }
+            }
             else 
             {
                 //Cancel was pressed
@@ -1856,9 +1932,17 @@ public class applicationWindow extends JFrame implements ActionListener
         JPanel dbPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         dbPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton btn1 = new JButton("REPAIR CORRUPT DB");
+        btn1.setForeground(Color.BLACK);
+        btn1.setBackground(new java.awt.Color(255, 140, 168));
         JButton btn2 = new JButton("MIRTH BLOWOUT");
+        btn2.setForeground(Color.BLACK);
+        btn2.setBackground(new java.awt.Color(235, 140, 255));
         JButton btn3 = new JButton("DATABASE OVERVIEW");
+        btn3.setForeground(Color.BLACK);
+        btn3.setBackground(new java.awt.Color(140, 221, 255));
         JButton btn4 = new JButton("SQL SEARCH");
+        btn4.setForeground(Color.BLACK);
+        btn4.setBackground(new java.awt.Color(140, 221, 255));
         dbPanel.add(btn1);
         dbPanel.add(btn2);
         dbPanel.add(btn3);
@@ -1871,13 +1955,20 @@ public class applicationWindow extends JFrame implements ActionListener
         JLabel genHeader = new JLabel("Generation Settings:");
         genHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainPanel.add(genHeader);
-
         JPanel genPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         genPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton btn5 = new JButton("TOGGLE SFTP ON/OFF");
+        btn5.setForeground(Color.BLACK);
+        btn5.setBackground(new java.awt.Color(140, 255, 187));
         JButton btn6 = new JButton("FORCE NEW CHANNEL GEN");
+        btn6.setForeground(Color.BLACK);
+        btn6.setBackground(new java.awt.Color(140, 255, 187));
+        JButton btn8 = new JButton("TOGGLE AUTO-BACKUP GEN");
+        btn8.setForeground(Color.BLACK);
+        btn8.setBackground(new java.awt.Color(140, 255, 187));
         genPanel.add(btn5);
         genPanel.add(btn6);
+        genPanel.add(btn8);
         mainPanel.add(genPanel);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -1890,6 +1981,8 @@ public class applicationWindow extends JFrame implements ActionListener
         JPanel otherPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         otherPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton btn7 = new JButton("REPAIR KEYSTORE");
+        btn7.setForeground(Color.BLACK);
+        btn7.setBackground(new java.awt.Color(255, 194, 140));
         otherPanel.add(btn7);
         mainPanel.add(otherPanel);
 
@@ -1926,6 +2019,7 @@ public class applicationWindow extends JFrame implements ActionListener
             else if (src == btn5) result[0] = 5;
             else if (src == btn6) result[0] = 6;
             else if (src == btn7) result[0] = 7;
+            else if (src == btn8) result[0] = 8;
             else if (src == btnCancel) result[0] = -1;
             dialog.dispose();
         };
@@ -1937,6 +2031,7 @@ public class applicationWindow extends JFrame implements ActionListener
         btn5.addActionListener(al);
         btn6.addActionListener(al);
         btn7.addActionListener(al);
+        btn8.addActionListener(al);
         btnCancel.addActionListener(al);
 
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -1969,10 +2064,19 @@ public class applicationWindow extends JFrame implements ActionListener
     public static String getCurrentDir()
     {
     	String currentDir = System.getProperty("user.dir");
+    	    	
     	System.out.println("Current dir hosting MCC.jar: " + currentDir);
     	logCommands.exportDevLogItem("Current dir hosting MCC.jar: " + currentDir);
     	
     	return currentDir;
+    }
+    
+    //added in 2.2.8 to check if MCC is in a Zip file. It will alert the user
+    public static String zipFileAlert()
+    {
+    	JOptionPane.showMessageDialog(labelVersion, "Unable to create the MCC-TRACE file. This likely means\nthat MCC.jar is not unzipped.\n\nPlease ensure MCC is unzipped before you proceed.", "CHECK MCC's LOCATION ALERT", JOptionPane.ERROR_MESSAGE);
+    	
+    	return "";
     }
     
     public static String applySettingsFromConfigFile(String currentDir)
@@ -1991,7 +2095,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	if(line.contains("Theme: "))
                 	{
                 		String targetTheme = line.replace("Theme: ", "");
-                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT"};
+                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE"};
                 		for(int mythemes=0;mythemes<themes.length;mythemes++)
                 		{
                 			if(targetTheme.equals(themes[mythemes]))

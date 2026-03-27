@@ -38,6 +38,13 @@ public class channelExport
     private static boolean isSFTPChannelNeeded = false;
     private static boolean sftpGenChoice = true;
     private static boolean generateSFTPTag = false;
+    
+    //Arraylist and booleans to determine if the Mirth Channel Auto Backup channel should be implemented
+    private static boolean isAutoBackupChannelNeeded = false;
+    private static boolean autoBackupChoice = true;
+    private static String autoBackupFolder = "";
+    private static ArrayList autoBackupSplit = new ArrayList();
+    private static boolean generateAutoBackupTag = false;
 
     //boolean to determine if code templates are included
     private static boolean includeCTLs;
@@ -101,6 +108,7 @@ public class channelExport
     	sftpRestartSplit.clear();
     	sftpChannelNames = "";
     	activeChannelNames.clear();
+    	autoBackupSplit.clear();
     	
     	//evaluates Mirth version to account for pre Mirth 3.5.0 channel generation
     	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");;
@@ -276,6 +284,7 @@ public class channelExport
          * 5. Exports the channel XML
          */
         boolean sftpCheck = true;
+        boolean autoChannelCheck = true;
         for(int cm=0;cm<channelNames.size();cm++)
         {          	
         	File currentChannelFile = new File(backupFolderPath+"channelBackup\\" + channelNames.get(cm)+".xml");
@@ -372,7 +381,7 @@ public class channelExport
             if(includeCTLs == true)
             {
             	//channelXMLOutput += "</codeTemplateLibraries>\n";
-            	if(!channelNames.get(cm).equals("SFTP Restart Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	if(generateAutoBackupTag == false && channelNames.get(cm).equals("MCC- Backup Channel") || generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel") || !channelNames.get(cm).equals("SFTP Restart Channel"))
             	{
             		channelXMLOutput += "<codeTemplateLibraries>\n";
                 	
@@ -393,17 +402,27 @@ public class channelExport
             	}
             	else
             	{
-            		//skip CTLs for the SFTP restart channel if the channel has not been imported into the database
+            		//skip CTLs for the SFTP restart channel and MCC- Backup Channel channel if the channel has not been imported into the database
             	}            	
             }
             else
             {
-            	//below checks if this is a new SFTP channel generation. If so, it will skip adding the exportdata tag
+            	//Updated the below logic with the addition of the MCC- Backup Channel channel added in 2.2.8
+            	//below checks if this is a new SFTP channel generation and/or MCC- Backup Channel channel. If so, it will skip adding the exportdata tag
             	//if it is not a new generation (aka, SFTP restart was already in the DB), then it will add the tag
-            	//added skip to exportdata if Mirth version is <3.5            	
-            	if(skipCMD == false && !channelNames.get(cm).equals("SFTP Restart Channel") || skipCMD == false && generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	//added skip to exportdata if Mirth version is <3.5      
+            	
+            	if(!channelNames.get(cm).equals("SFTP Restart Channel") && !channelNames.get(cm).equals("MCC- Backup Channel"))
             	{
             		channelXMLOutput += "</exportData>\n";
+            	}
+            	else if(skipCMD == false && generateAutoBackupTag == false && channelNames.get(cm).equals("MCC- Backup Channel") || skipCMD == false && generateSFTPTag == false && channelNames.get(cm).equals("SFTP Restart Channel"))
+            	{
+            		channelXMLOutput += "</exportData>\n";
+            	}
+            	else
+            	{
+            		//new channel was generated. Skipping adding the closing exportdata
             	}
             }
             channelXMLOutput += "</channel>";
@@ -429,6 +448,13 @@ public class channelExport
         	{ 
                 sftpChannelBuilder(host);
                 sftpCheck = false;
+        	}
+        	
+        	//new in 2.2.8 - Evaluates if the automatic Mirth channel backup channel is needed
+        	if(!channelNames.contains("MCC- Backup Channel") && autoChannelCheck == true || !channelIDs.contains("05222000-cmm2-mcc1-ilu4-mccb4ckup789") && autoChannelCheck == true)
+        	{ 
+        		generateAutoBackupChannel(host);
+        		autoChannelCheck = false;
         	}
         }                       
         //END channelExport Appending      
@@ -766,6 +792,126 @@ public class channelExport
     	return "SFTP Restart Channel Added";
     }
     
+    public static String generateAutoBackupChannel(String host)
+    {
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 6 && Integer.parseInt(splitVersion[2]) >= 1)
+    	{
+    		System.out.println("I am greater than/equal to Mirth version 3.6.1");
+    		logCommands.exportDevLogItem("I am greater than/equal to Mirth version 3.6.1");
+    		if(!channelNames.contains("MCC- Backup Channel") && !channelIDs.contains("05222000-cmm2-mcc1-ilu4-mccb4ckup789"))
+    		{
+    			isAutoBackupChannelNeeded = true;
+    			System.out.println("isAutoBackupChannelNeeded: " + isAutoBackupChannelNeeded);
+    			logCommands.exportDevLogItem("isAutoBackupChannelNeeded: " + isAutoBackupChannelNeeded);
+				System.out.println("autoBackupChoice: " + autoBackupChoice);
+				logCommands.exportDevLogItem("autoBackupChoice: " + autoBackupChoice);
+				
+    			if(isAutoBackupChannelNeeded == true && autoBackupChoice == true)
+    			{
+    				generateAutoBackupTag = true;	    			
+	    			InputStream inputStream = channelExport.class.getResourceAsStream("/MCC- Backup Channel.xml");
+	    			if (inputStream != null) 
+	    			{
+	    			    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) 
+	    			    {
+	    			        String line;
+	    			        while ((line = reader.readLine()) != null) 
+	    			        {
+	    			        	autoBackupSplit.add(line);
+	    			        }
+	    			    } 
+	    			    catch (IOException e) 
+	    			    {
+	    			        e.printStackTrace();
+	    			    }
+	    			} 
+	    			else 
+	    			{
+	    			    System.err.println("File not found in resources.");
+	    			}
+	    			
+	    			//compiles the full XML and swaps out description and the target channels
+	    			String fullAutoBackupWithReplacements = "";
+	    			for(int fun=0;fun<autoBackupSplit.size();fun++) 
+	    			{
+	    				String currentLine = autoBackupSplit.get(fun).toString();
+	    				if(currentLine.contains("CHANGETHATDATE"))
+	    				{
+	    					fullAutoBackupWithReplacements += currentLine.replace("CHANGETHATDATE", logCommands.getDateTime()) + "\n";
+	    				}
+	    				else if(currentLine.contains("CHANGEBACKUPFILEPATH"))
+	    				{
+	    					String replacementPath = host.replace("jdbc:derby:", "").replace(";", "");
+	    					replacementPath = replacementPath.substring(0,2)+"/ -Auto Mirth Channel Backup-";
+	    					
+	    					//Creates the path from above. Will throw an error if permissions are not right/it cannot create the folder
+	    					File dir = new File(replacementPath);
+	    					if(!dir.exists())
+	    					{
+	    						System.out.println("File path '" + replacementPath + "' does not exist. Creating folder");
+	    						logCommands.exportDevLogItem("File path '" + replacementPath + "' does not exist. Creating folder");
+	    						try
+	    						{
+	    							dir.mkdirs();
+	    						}
+	    						catch(Exception e)
+	    						{
+	    							System.out.println("ERROR: " + e);
+	    							logCommands.exportToLog("ERROR ENCOUNTERED CREATING FOLDER FOR 'MCC- Backup Channel'");
+	    						}
+	    						
+	    					}
+	    					else
+	    					{
+	    						System.out.println("File path '" + replacementPath + "' already exists on the drive");
+	    						logCommands.exportDevLogItem("File path '" + replacementPath + "' already exists on the drive");
+	    					}	 
+	    					replacementPath = replacementPath + "/Backup ${date.get('yyyy-MM-dd')}";
+	    					fullAutoBackupWithReplacements += currentLine.replace("CHANGEBACKUPFILEPATH", replacementPath) + "\n";
+	    				}
+	    				else if(currentLine.contains("CHANGEPOSTPROCESSINGPATH"))
+	    				{
+	    					String replacementPath = host.replace("jdbc:derby:", "").replace(";", "");
+	    					replacementPath = replacementPath.substring(0,2)+"/ -Auto Mirth Channel Backup-";
+	    					fullAutoBackupWithReplacements += currentLine.replace("CHANGEPOSTPROCESSINGPATH", replacementPath) + "\n";
+	    				}
+	    				else
+	    				{
+	    					fullAutoBackupWithReplacements += currentLine + "\n";
+	    				}
+	    			}
+	    			channelNames.add("MCC- Backup Channel");
+	    			rawChannelCLOB.add(fullAutoBackupWithReplacements);
+	    			channelIDs.add("05222000-cmm2-mcc1-ilu4-mccb4ckup789");
+	    			channelMetadata.add("nullPlaceholder");
+    			}
+    			else
+    			{
+    				if(autoBackupChoice == false)
+    				{
+    					System.out.println("User chose to disable the Automatic Channel Backup channel generation via MORE FUNCTIONS");
+    					logCommands.exportDevLogItem("User chose to disable the Automatic Channel Backup channel generation via MORE FUNCTIONS");
+    				}   				
+    			}
+    		}
+    		else
+    		{
+    			System.out.println("Automatic Channel Backup channel already exists in client's database");
+    			logCommands.exportDevLogItem("Automatic Channel Backup channel already exists in client's database");
+    		}		
+    	}
+    	else
+    	{
+    		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.6.1 or higher is required for the Automatic Channel Backup channel");
+    		logCommands.exportDevLogItem("Mirth version is '" + mirthVersion + "'. Mirth 3.6.1 or higher is required for the Automatic Channel Backup channel");
+    	}
+    	
+    	return "auto channel built";
+    }
+    
     public static boolean setSFTPGeneration(boolean choice)
     {
     	sftpGenChoice = choice;
@@ -783,6 +929,17 @@ public class channelExport
     	logCommands.exportDevLogItem("Mirth will use the new channel generation: " + choice);
     	forceNewChannelGeneration = choice;
     	return forceNewChannelGeneration;
+    }
+    
+    public static boolean setAutoBackupChannelGeneration(boolean choice)
+    {
+    	autoBackupChoice = choice;
+    	return autoBackupChoice;
+    }
+    
+    public static boolean allowAutoBackupChannelGeneration()
+    {
+    	return autoBackupChoice;
     }
     
     public static boolean getForceNewChannelGeneration()
