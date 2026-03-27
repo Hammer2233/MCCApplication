@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import javax.swing.JOptionPane;
+
 public class logCommands 
 {
     //logs entire active session's text for updating log window in app
@@ -24,7 +26,16 @@ public class logCommands
     {
         //This will call for the current date and time. The log file will be created if it doesn't exist and a "session start" indicator will print
         String currentDate = getDateTime();
-        logThis = new PrintWriter(new FileOutputStream(new File("MCC-TRACE.log"), true));
+        try
+        {
+        	logThis = new PrintWriter(new FileOutputStream(new File("MCC-TRACE.log"), true));
+        }
+        catch(Exception e)
+        {
+        	//added in 2.2.8. If the log file cannot be written, it is likely because we're in a zip folder. A popup will appear
+        	applicationWindow.zipFileAlert();
+        }
+        
         logThis.print(currentDate+" -Log Established-\n");
         activeSessionLog.add(currentDate+ " -Log Established-\n");
         logThis.flush();

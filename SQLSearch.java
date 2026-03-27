@@ -1,6 +1,7 @@
 package main;
 
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
@@ -38,7 +39,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-public class SQLSearch extends JFrame 
+//public class SQLSearch extends JFrame
+public class SQLSearch extends JDialog
 {
 	private static JTextArea focusedResultSpace;
 	private static JTextArea SQLQuerySpace;
@@ -98,8 +100,9 @@ public class SQLSearch extends JFrame
     private static int chosenQuery;
     private boolean isWindowOpen;
 
-    public SQLSearch(int choice) 
+    public SQLSearch(JFrame parent, int choice) 
     {
+    	super(parent, "Search Results", true);
     	//Checks if a Window is actively open
     	isWindowOpen = Main.getWindowStatus();
     	
@@ -119,7 +122,7 @@ public class SQLSearch extends JFrame
     		{
     			System.out.println("Mirth database version is 3.5 or higher");
     			logCommands.exportDevLogItem("Mirth database version is 3.5 or higher");
-        		
+        		    			
         		setTitle("Search Results");
                 chosenQuery = choice;
                 System.out.println("Window Opened");
@@ -166,6 +169,17 @@ public class SQLSearch extends JFrame
                 	logCommands.exportDevLogItem("Chosen Query: Custom SQL Query");
                 }
 
+                //Added in 2.2.8 to snap the SQL Search windows to the main MCC application
+                if(parent != null) 
+                {
+                    setLocationRelativeTo(parent);
+                } 
+                else 
+                {
+                    setLocationRelativeTo(null);
+                }
+
+                setDefaultCloseOperation(DISPOSE_ON_CLOSE);
                 setVisible(true);
     		} 
     		else

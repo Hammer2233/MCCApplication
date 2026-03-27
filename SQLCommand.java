@@ -871,9 +871,7 @@ public class SQLCommand
         {
     		String query = "call SYSCS_UTIL.SYSCS_COMPRESS_TABLE('APP','" + name.toUpperCase() + "', 1)";
     		stmt.executeUpdate(query);
-    		
-    		//logCommands.exportToLog("Table: " + name + " Compressed");)
-        } 
+    	} 
     	catch (SQLException e) 
     	{
 			System.out.println(e);
