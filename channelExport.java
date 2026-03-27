@@ -797,7 +797,11 @@ public class channelExport
     	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
     	String[] splitVersion = mirthVersion.split("\\.");
     	
-    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 6 && Integer.parseInt(splitVersion[2]) >= 1)
+    	//Changed logic after discovering bug where because Mirth version was 3.12.0, it failed the check. Does 3 checks
+    	//1. Am I Greater than Mirth version 3.x.x (AKA, Mirth 4.0 or higher)
+    	//2. Am I greater than Mirth 3.6.1 (AKA, Mirth 3.7 or higher)
+    	//3. If I am Mirth 3.6, am I greater than or eqaul to Mirth 3.6.1
+    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) > 6 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 6 && Integer.parseInt(splitVersion[2]) >= 1)
     	{
     		System.out.println("I am greater than/equal to Mirth version 3.6.1");
     		logCommands.exportDevLogItem("I am greater than/equal to Mirth version 3.6.1");
