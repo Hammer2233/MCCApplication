@@ -2,7 +2,7 @@
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
 Current Version: 2.2.8
-Last Update: 3/26/26
+Last Update: 3/27/26
 =================================
 
 Version 2.1.0:
@@ -65,3 +65,5 @@ Version 2.2.8:
 -Added new option under "MORE FUNCTIONS" to toggle the 'MCC- Backup Channel' generation on or off
 -Fixed issue where the SQL Search windows would not open on top of the main MCC application's location on screen
 -Added alerts if MCC is detected to be in a zip folder
+-Fixed improper MCC package to include the "MCC- Backup Channel" file with the correct metaData tag replacements
+-Fixed bug where the "MCC- Backup Channel" generation logic was wrongly excluding Mirth versions >3.6.1 but <4.0.0 due to the 3rd version digit being <1. Example was version 3.12.0. Since the 0 isn't >1, it was failing. Added a 3 part check (1. Is version 4.x, 2. is version 3.7 or greater, 3. is version 3.6.1 or higher)
