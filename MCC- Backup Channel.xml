@@ -1,0 +1,343 @@
+<channel version="3.6.1">
+  <id>05222000-cmm2-mcc1-ilu4-mccb4ckup789</id>
+  <nextMetaDataId>2</nextMetaDataId>
+  <name>MCC- Backup Channel</name>
+  <description>Created automatically by MCC on CHANGETHATDATE</description>
+  <revision>4</revision>
+  <sourceConnector version="3.6.1">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.js.JavaScriptReceiverProperties" version="3.6.1">
+      <pluginProperties/>
+      <pollConnectorProperties version="3.6.1">
+        <pollingType>INTERVAL</pollingType>
+        <pollOnStart>true</pollOnStart>
+        <pollingFrequency>43200000</pollingFrequency>
+        <pollingHour>0</pollingHour>
+        <pollingMinute>0</pollingMinute>
+        <cronJobs/>
+        <pollConnectorPropertiesAdvanced>
+          <weekly>true</weekly>
+          <inactiveDays>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+          </inactiveDays>
+          <dayOfMonth>1</dayOfMonth>
+          <allDay>true</allDay>
+          <startingHour>8</startingHour>
+          <startingMinute>0</startingMinute>
+          <endingHour>17</endingHour>
+          <endingMinute>0</endingMinute>
+        </pollConnectorPropertiesAdvanced>
+      </pollConnectorProperties>
+      <sourceConnectorProperties version="3.6.1">
+        <responseVariable>None</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>1</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+      <script>//Use fully qualified names to avoid resolution issues across different Mirth versions
+var channelController = com.mirth.connect.server.controllers.ChannelController.getInstance();
+var configController = com.mirth.connect.server.controllers.ConfigurationController.getInstance();
+var serializer = com.mirth.connect.model.converters.ObjectXMLSerializer.getInstance();
+
+//Fetch all channels and metadata from the server database
+var allChannels = channelController.getChannels(null);
+var allMetadata = configController.getChannelMetadata();
+
+//Initialize a Java ArrayList
+var resultList = new java.util.ArrayList();
+
+if (allChannels != null)
+{
+for (var i = 0; i &lt; allChannels.size(); i++)
+{
+var channel = allChannels.get(i);
+var channelId = channel.getId();
+
+// Serialize the channel object to XML string
+var channelXml = serializer.serialize(channel);
+var metadata = allMetadata.get(channelId);
+var metadataXml = &quot;&quot;;
+
+if (metadata != null)
+{
+    var rawMeta = serializer.serialize(metadata);
+    
+    //1. Force to a JavaScript String to ensure we use JS replace()
+    var metaString = String(rawMeta); 
+
+    //2. Perform the replacement
+    var cleanMeta = metaString
+        .replace(&quot;&lt;com.mirth.connect.model.ChannelMetadata&gt;&quot;, &quot;&lt;metadata&gt;&quot;)
+        .replace(&quot;&lt;/com.mirth.connect.model.ChannelMetadata&gt;&quot;, &quot;&lt;/metadata&gt;&quot;);
+
+    metadataXml = &quot;\n  &lt;exportData&gt;\n    &quot; + cleanMeta + &quot;\n  &lt;/exportData&gt;&quot;;
+}
+
+//Inject metadata before the closing channel tag
+var finalXml = channelXml.toString().replace(&apos;&lt;/channel&gt;&apos;, metadataXml + &quot;\n&lt;/channel&gt;&quot;);
+
+//Add the XML string to the list for processing
+resultList.add(finalXml);
+}
+}
+
+return resultList;</script>
+    </properties>
+    <transformer version="3.6.1">
+      <elements/>
+      <inboundDataType>RAW</inboundDataType>
+      <outboundDataType>RAW</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+          <splitType>JavaScript</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+          <splitType>JavaScript</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="3.6.1">
+      <elements/>
+    </filter>
+    <transportName>JavaScript Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="3.6.1">
+      <metaDataId>1</metaDataId>
+      <name>Channel Backup Destination</name>
+      <properties class="com.mirth.connect.connectors.file.FileDispatcherProperties" version="3.6.1">
+        <pluginProperties/>
+        <destinationConnectorProperties version="3.6.1">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <scheme>FILE</scheme>
+        <host>CHANGEBACKUPFILEPATH</host>
+        <outputPattern>${backupFilename}</outputPattern>
+        <anonymous>true</anonymous>
+        <username>anonymous</username>
+        <password>anonymous</password>
+        <timeout>10000</timeout>
+        <secure>true</secure>
+        <passive>true</passive>
+        <validateConnection>true</validateConnection>
+        <outputAppend>false</outputAppend>
+        <errorOnExists>false</errorOnExists>
+        <temporary>false</temporary>
+        <binary>false</binary>
+        <charsetEncoding>DEFAULT_ENCODING</charsetEncoding>
+        <template>${message.encodedData}</template>
+      </properties>
+      <transformer version="3.6.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+            <name>Splitter and File Writer</name>
+            <sequenceNumber>0</sequenceNumber>
+            <script>var raw = String(connectorMessage.getRawData());
+
+//Extract name from &lt;name&gt; tag
+var nameStart = raw.indexOf(&quot;&lt;name&gt;&quot;) + 6;
+var nameEnd = raw.indexOf(&quot;&lt;/name&gt;&quot;);
+var channelName = raw.substring(nameStart, nameEnd);
+
+channelMap.put(&apos;backupFilename&apos;, channelName + &quot;.xml&quot;);
+
+//Use the clean XML from the source
+tmp = raw;</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="3.6.1">
+        <elements/>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="3.6.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="3.6.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="3.6.1">
+        <elements/>
+      </filter>
+      <transportName>File Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>// Modify the message variable below to pre process data
+return message;</preprocessingScript>
+  <postprocessingScript>var rootBackupDir = &quot;CHANGEPOSTPROCESSINGPATH&quot;; //Enter the base path, NOT the date folder
+var daysToKeep = 7;
+var millisecondsInDay = 24 * 60 * 60 * 1000;
+var retentionPeriod = daysToKeep * millisecondsInDay;
+var currentTime = new java.util.Date().getTime();
+
+try 
+{
+    var parentDir = new java.io.File(rootBackupDir);
+
+    if (parentDir.exists() &amp;&amp; parentDir.isDirectory()) 
+    {
+        var folders = parentDir.listFiles();
+
+        for (var i = 0; i &lt; folders.length; i++) 
+        {
+            var folder = folders[i];
+            var folderName = folder.getName();
+            
+            //Check if it is a directory AND contains &quot;Backup 20&quot;
+            if (folder.isDirectory() &amp;&amp; folderName.indexOf(&quot;Backup 20&quot;) !== -1) 
+            {
+                var diff = currentTime - folder.lastModified();
+
+                if (diff &gt; retentionPeriod) 
+                {
+                    //This helper function deletes a folder and all its contents
+                    if (deleteFolder(folder)) 
+                    {
+                        logger.info(&quot;Deleted expired backup folder: &quot; + folderName);
+                    } 
+                    else 
+                    {
+                        logger.error(&quot;Failed to delete folder: &quot; + folderName);
+                    }
+                }
+            }
+        }
+    }
+} 
+catch (e) 
+{
+    logger.error(&quot;Error during folder cleanup: &quot; + e.toString());
+}
+
+//Helper function to handle non-empty directories
+function deleteFolder(folder) 
+{
+    var files = folder.listFiles();
+    if (files != null) 
+    {
+        for (var j = 0; j &lt; files.length; j++) 
+        {
+            deleteFolder(files[j]);
+        }
+    }
+    return folder.delete();
+}</postprocessingScript>
+  <deployScript>// This script executes once when the channel is deployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</deployScript>
+  <undeployScript>// This script executes once when the channel is undeployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</undeployScript>
+  <properties version="3.6.1">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <encryptData>false</encryptData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>true</storeAttachments>
+    <metaDataColumns>
+      <metaDataColumn>
+        <name>SOURCE</name>
+        <type>STRING</type>
+        <mappingName>mirth_source</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>TYPE</name>
+        <type>STRING</type>
+        <mappingName>mirth_type</mappingName>
+      </metaDataColumn>
+    </metaDataColumns>
+    <attachmentProperties version="3.6.1">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+  <exportData>
+    <metadata>
+      <enabled>true</enabled>
+      <lastModified>
+        <time>1774626381643</time>
+        <timezone>America/Chicago</timezone>
+      </lastModified>
+      <pruningSettings>
+        <pruneMetaDataDays>7</pruneMetaDataDays>
+        <pruneContentDays>7</pruneContentDays>
+        <archiveEnabled>true</archiveEnabled>
+      </pruningSettings>
+    </metadata>
+  </exportData>
+</channel>
