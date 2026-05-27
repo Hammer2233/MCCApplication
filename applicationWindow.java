@@ -94,6 +94,8 @@ public class applicationWindow extends JFrame implements ActionListener
 
     private static JTextArea logTextArea = new JTextArea(5,10);
     private static JScrollPane logTextScroll;
+    
+    private static int popupNo = 0;
 
     public static void main(String[] args)
     {
@@ -118,7 +120,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.8");
+        setTitle("MCC -2.2.9");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -570,7 +572,9 @@ public class applicationWindow extends JFrame implements ActionListener
 	            	{
 	            		int currenti = i;
 	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+	            		String currentPw = SQLCommand.readPasswordArrayList(i);
 	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+	            		logCommands.exportDevLogItem("User #" + (currenti+1) + " Password: " + currentPw);
 	                    String formattedUN = "'" + currentUn + "'";
 	                    unList = unList + formattedUN + "\n";
 	            	}
@@ -579,7 +583,9 @@ public class applicationWindow extends JFrame implements ActionListener
 	            else
 	            {
 	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+            		String currentPw = SQLCommand.readPasswordArrayList(howManyUsernames-1);
 	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+	            	logCommands.exportDevLogItem("User PW: " + currentPw);
 	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
 	            }
 	            killConnection(host);
@@ -598,7 +604,9 @@ public class applicationWindow extends JFrame implements ActionListener
     	            	{
     	            		int currenti = i;
     	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+    	            		String currentPw = SQLCommand.readPasswordArrayList(i);
     	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+    	            		logCommands.exportDevLogItem("User #" + (currenti+1) + " Password: " + currentPw);
     	                    String formattedUN = "'" + currentUn + "'";
     	                    unList = unList + formattedUN + "\n";
     	            	}
@@ -607,7 +615,9 @@ public class applicationWindow extends JFrame implements ActionListener
     	            else
     	            {
     	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+                		String currentPw = SQLCommand.readPasswordArrayList(howManyUsernames-1);
     	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+    	            	logCommands.exportDevLogItem("User PW: " + currentPw);
     	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
     	            }
     	            killConnection(host);
@@ -2164,5 +2174,17 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	backupRunForBlowout = true;
     	return backupRunForBlowout;
+    }
+    
+    public static String displayCorruptDBPopup()
+    {
+    	//Will display 3 times before not displaying any more for the current session
+    	if(popupNo < 3)
+    	{
+    		popupNo++;
+    		JOptionPane.showMessageDialog(labelVersion, "MCC was unable to successfully access the Mirth database.\n\nAn error related to Log file corruption was thrown.\nIt is suggested to run a 'REPAIR CORRUPT DB' under\nthe 'MORE FUNCTIONS' button.", "LOG FILE CORRUPTION WARNING" , JOptionPane.WARNING_MESSAGE);
+    	}
+    	
+    	return "Window opened";
     }
 }

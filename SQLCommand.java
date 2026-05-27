@@ -18,6 +18,7 @@ public class SQLCommand
 {
     static String backupFolderPath ="";
     private static ArrayList usernameList = new ArrayList();
+    private static ArrayList passwordList = new ArrayList();
     private static String mirthConfigUN = "";
     private static String mirthConfigPW = "";
     
@@ -38,7 +39,9 @@ public class SQLCommand
     public static String checkUN(String host)
     {
         backupFolderPath = Main.getBackupFolder();
+        getUsernamePassword(host);
         String currentUn = "";
+        int passwordCaller = 0;
         try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
         {
         	usernameList.clear();
@@ -53,8 +56,10 @@ public class SQLCommand
                     String XMLdata = rs.getString(2);
                     currentUn = XMLdata;
                     usernameList.add(currentUn);
-                    System.out.println("currentUsername:" + currentUn);
-                    logCommands.exportDevLogItem("currentUsername:" + currentUn);
+                    System.out.println("currentUsername: " + currentUn);
+                    System.out.println(currentUn + "'s Password: " + passwordList.get(passwordCaller).toString().trim());
+                    passwordCaller++;
+                    //logCommands.exportDevLogItem("currentUsername:" + currentUn);
                 }
             } 
             catch (SQLException sqlExcept) 
@@ -67,10 +72,36 @@ public class SQLCommand
         }
         catch (Exception e) 
         {
-            e.printStackTrace();
-            logCommands.exportToLog("ERROR: " + e);
-			logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
-			Main.configPathReader();
+        	boolean foundLogCorruption = false;
+        	
+        	Throwable currentMessage = e;
+        	while (currentMessage != null)
+        	{
+        		if(currentMessage.getMessage() != null && currentMessage.getMessage().contains("Log record"))
+        		{
+        			foundLogCorruption = true;
+        			break;
+        		}
+        		currentMessage = currentMessage.getCause();
+        	}
+        	
+            if(foundLogCorruption == true)
+            {
+            	logCommands.exportDevLogItem("Error when attempting to query Mirth usernames.");
+            	logCommands.exportDevLogItem("Execption contained 'Log record', likely pointing towards Log file corruption in the Mirth DB.");
+            	
+            	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Possible database corruption detected.");
+            	logCommands.exportToLog("Run a 'REPAIR CORRUPT DB' under the 'MORE FUNCTIONS' button.");
+            	applicationWindow.displayCorruptDBPopup();
+            	e.printStackTrace();
+            }
+            else
+            {            	
+                logCommands.exportToLog("ERROR: " + e);
+    			logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
+    			Main.configPathReader();
+    			e.printStackTrace();
+            }            
         }
         
         if(currentUn == "")
@@ -101,6 +132,86 @@ public class SQLCommand
     public static ArrayList returnArraylist()
     {
     	return usernameList;
+    }
+    
+    public static String readPasswordArrayList(int currentCall)
+    {
+    	String returnMe = passwordList.get(currentCall).toString();
+    	return returnMe;
+    }
+    
+    public static String getUsernamePassword(String host)
+    {
+    	String currentPW = "";
+    	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+        {
+    		passwordList.clear();
+            String query = "SELECT PASSWORD FROM PERSON_PASSWORD";
+            ResultSet rs = stmt.executeQuery(query);
+
+            try
+            {
+                while (rs.next()) 
+                {                 
+                    //column containing user password
+                    String XMLdata = rs.getString(1);
+                    currentPW = XMLdata;
+                    passwordList.add(currentPW.trim());
+                    //System.out.println("currentPassword:" + currentPW.trim());
+                    //logCommands.exportDevLogItem("currentPassword:" + currentPW.trim());
+                }
+            } 
+            catch (SQLException sqlExcept) 
+            {
+                System.out.println("FAILED MISERABLY");
+                System.out.println(sqlExcept);
+                logCommands.exportDevLogItem(sqlExcept.toString());
+            }
+            conn.close();
+        }
+        catch (Exception e) 
+        {
+        	boolean foundLogCorruption = false;
+        	
+        	Throwable currentMessage = e;
+        	while (currentMessage != null)
+        	{
+        		if(currentMessage.getMessage() != null && currentMessage.getMessage().contains("Log record"))
+        		{
+        			foundLogCorruption = true;
+        			break;
+        		}
+        		currentMessage = currentMessage.getCause();
+        	}
+        	
+            if(foundLogCorruption == true)
+            {
+            	logCommands.exportDevLogItem("Error when attempting to query Mirth passwords.");
+            	logCommands.exportDevLogItem("Execption contained 'Log record', likely pointing towards Log file corruption in the Mirth DB.");
+            	
+            	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Possible database corruption detected.");
+            	logCommands.exportToLog("Run a 'REPAIR CORRUPT DB' under the 'MORE FUNCTIONS' button.");
+            	//applicationWindow.displayCorruptDBPopup();
+            	e.printStackTrace();
+            }
+            else
+            {            	
+                logCommands.exportToLog("ERROR: " + e);
+    			logCommands.exportToLog("Unable to locate the Mirth database. Please verify the location of the 'mirthdb' folder.");
+    			Main.configPathReader();
+    			e.printStackTrace();
+            }            
+        }
+        
+        if(currentPW == "")
+        {
+        	currentPW = "NONE FOUND";
+            return currentPW;
+        }
+        else
+        {
+            return currentPW;
+        }
     }
 
     public static String resetUsernamePassword(String host, int usernameToChange)
