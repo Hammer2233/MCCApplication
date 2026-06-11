@@ -94,6 +94,13 @@ public class applicationWindow extends JFrame implements ActionListener
 
     private static JTextArea logTextArea = new JTextArea(5,10);
     private static JScrollPane logTextScroll;
+    
+    private static int popupNo = 0;
+    
+    //variables for the mcc.config file
+    private static String loadTheme = "LIGHT";
+    private static boolean sftpGenStatus = true;
+    private static boolean mccBackupGenStatus = true;
 
     public static void main(String[] args)
     {
@@ -118,7 +125,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.8");
+        setTitle("MCC -2.2.9");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -314,7 +321,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         //sets theme to anything other than the OG
         //currently set to "lite"
-        changeTheme(2, "startedApp");
+        //changeTheme(2, "startedApp");
         //End setting theme
         
         toggleButtons(toggleEnabled);
@@ -570,7 +577,9 @@ public class applicationWindow extends JFrame implements ActionListener
 	            	{
 	            		int currenti = i;
 	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+	            		String currentPw = SQLCommand.readPasswordArrayList(i);
 	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+	            		logCommands.exportDevLogItem("User #" + (currenti+1) + " Password: " + currentPw);
 	                    String formattedUN = "'" + currentUn + "'";
 	                    unList = unList + formattedUN + "\n";
 	            	}
@@ -579,7 +588,9 @@ public class applicationWindow extends JFrame implements ActionListener
 	            else
 	            {
 	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+            		String currentPw = SQLCommand.readPasswordArrayList(howManyUsernames-1);
 	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+	            	logCommands.exportDevLogItem("User PW: " + currentPw);
 	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
 	            }
 	            killConnection(host);
@@ -598,7 +609,9 @@ public class applicationWindow extends JFrame implements ActionListener
     	            	{
     	            		int currenti = i;
     	            		String currentUn = SQLCommand.readUsernameArraylist(i);
+    	            		String currentPw = SQLCommand.readPasswordArrayList(i);
     	            		logCommands.exportToLog(howManyUsernames + " USERNAMES FOUND: #" + (currenti+1) + ": " + currentUn);
+    	            		logCommands.exportDevLogItem("User #" + (currenti+1) + " Password: " + currentPw);
     	                    String formattedUN = "'" + currentUn + "'";
     	                    unList = unList + formattedUN + "\n";
     	            	}
@@ -607,7 +620,9 @@ public class applicationWindow extends JFrame implements ActionListener
     	            else
     	            {
     	            	String currentUsername = SQLCommand.readUsernameArraylist(howManyUsernames-1);
+                		String currentPw = SQLCommand.readPasswordArrayList(howManyUsernames-1);
     	            	logCommands.exportToLog("CURRENT USERNAME: " + currentUsername);
+    	            	logCommands.exportDevLogItem("User PW: " + currentPw);
     	                JOptionPane.showMessageDialog(labelVersion, "Username is: '" + currentUsername + "'");
     	            }
     	            killConnection(host);
@@ -1103,28 +1118,40 @@ public class applicationWindow extends JFrame implements ActionListener
         }
 
         // Create batch file
-        try (PrintWriter batWriter = new PrintWriter(targetDirectory + "\\MCC-TARGET_ME.bat")) {
+        try (PrintWriter batWriter = new PrintWriter(targetDirectory + "\\MCC-TARGET_ME.bat")) 
+        {
             batWriter.print("@echo off\nset service=\"Mirth Connect Service\"\nnet stop %service%\n\nTIMEOUT /T 10\nTASKKILL /F /FI \"SERVICES eq Mirth Connect Service\"\n\nnet.exe session 1>NUL 2>&1\nif %ErrorLevel% equ 0 (\ncd /d %~dp0\nstart javaw -jar MCC-SIDEKICK.jar\n) else (\n    echo Batch file is NOT running as an Admin. Please run Batch file with Admin privileges.\n    pause\n)\n\nTIMEOUT /T 30\nnet start %service%\nTIMEOUT /T 4");
-        } catch (FileNotFoundException e) {
+        } 
+        catch (FileNotFoundException e) 
+        {
             e.printStackTrace();
         }
 
         // Create configuration file and copy JAR
-        try (PrintWriter configWriter = new PrintWriter(targetDirectory + "\\backupConfigurationSettings.mcc")) {
+        try (PrintWriter configWriter = new PrintWriter(targetDirectory + "\\backupConfigurationSettings.mcc")) 
+        {
             URL sideKick = applicationWindow.class.getResource("/MCC-SIDEKICK.jar");
 
             configWriter.print("--Altering the values below customizes the backup and retention when MCC-SIDEKICK runs\n--Be sure to target the \"MCC-TARGET_ME.bat\" file from Windows Task Scheduler as admin to run the backups\nDELETE BACKUP FILES OLDER THAN(Days): 30\nCURRENT BACKUP DIRECTORY: " + chosenPath);
 
-            if (sideKick != null) {
-                try {
+            if (sideKick != null) 
+            {
+                try 
+                {
                     copySidekickToDIR(sideKick, targetDirectory.getAbsolutePath() + "\\");
-                } catch (IOException e) {
+                } 
+                catch (IOException e) 
+                {
                     e.printStackTrace();
                 }
-            } else {
+            } 
+            else 
+            {
                 System.err.println("MCC-SIDEKICK.jar could not be found in the JAR.");
             }
-        } catch (FileNotFoundException e) {
+        } 
+        catch (FileNotFoundException e) 
+        {
             e.printStackTrace();
         }
 
@@ -1160,8 +1187,9 @@ public class applicationWindow extends JFrame implements ActionListener
     		else
     		{
     			logCommands.exportToLog("THEME LOADED: -" + themeName);
-    		}    		
-    		writeConfigFile(themeName);
+    		}    	
+    		loadTheme = themeName;
+    		writeConfigFile();
     	}
     	    	
     	if(chosenTheme == 0)
@@ -1782,11 +1810,15 @@ public class applicationWindow extends JFrame implements ActionListener
                 {
                 	logCommands.exportToLog("SFTP Restart Channel generation DISABLED");
                 	channelExport.setSFTPGeneration(false);
+                	sftpGenStatus = false;
+                	writeConfigFile();
                 }
                 else if (sftpChoice == 0)
                 {
                 	logCommands.exportToLog("SFTP Restart Channel generation ENABLED");
                 	channelExport.setSFTPGeneration(true);
+                	sftpGenStatus = true;
+                	writeConfigFile();
                 }
                 else
                 {
@@ -1885,11 +1917,15 @@ public class applicationWindow extends JFrame implements ActionListener
                 {
                 	logCommands.exportToLog("MCC- Backup Channel generation DISABLED");
                 	channelExport.setAutoBackupChannelGeneration(false);
+                	mccBackupGenStatus = false;
+                	writeConfigFile();
                 }
                 else if (autoBackupChoice == 0)
                 {
                 	logCommands.exportToLog("MCC- Backup Channel generation ENABLED");
                 	channelExport.setAutoBackupChannelGeneration(true);
+                	mccBackupGenStatus = true;
+                	writeConfigFile();
                 }
                 else
                 {
@@ -1904,6 +1940,67 @@ public class applicationWindow extends JFrame implements ActionListener
                 		genAction = "DISABLED";
                 	}
                 	logCommands.exportToLog("Generation action currently set to: " + genAction);
+                }
+            }
+            else if(selection == 9)
+            {
+            	//added in 2.2.9 to set Mirth memory
+            	Boolean foundMemoryFile = false;
+            	Boolean cancelledFirstMenu = false;
+            	Object[] secondOptions = { "CONTINUE", "CANCEL" };
+                int repairChoice = JOptionPane.showOptionDialog(labelVersion, "By default, Mirth database max memory is set to only\n256mbs when Mirth is freshly installed. This\nis often not enough memory. Use this option to\nincrease/decrease the Mirth database's memory\n\nNOTE: Ensure you have ran MCC.jar as admin via the batch file", "UPDATE MIRTH DB MEMORY?", 0, 2, null, secondOptions, secondOptions[1]);
+                if (repairChoice < 0 || repairChoice == 1)
+                {
+                	logCommands.exportToLog("MIRTH DATABASE MEMORY CHANGES CANCELLED. No action was taken");
+                	cancelledFirstMenu = true;
+                }
+                else if (repairChoice == 0)
+                {
+                	boolean changedDirCheck = Main.changedDirTF();
+                	if(changedDirCheck == true)
+                	{
+                		foundMemoryFile = Main.detectedMirthMemoryFile();     
+                	}
+                	else
+                	{
+                		if(serviceState == "STOPPED")
+                    	{
+                			foundMemoryFile = Main.detectedMirthMemoryFile();  
+                    	}
+                        else if(serviceState == "STARTED")
+                    	{
+                    		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
+                    	}
+                    	else
+                    	{
+                    		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+                    	}  
+                	} 
+                }
+                
+                if(foundMemoryFile == true)
+                {
+                	String currentMem = Main.readCurrentMirthMemory();
+                	logCommands.exportToLog("'mcservice.vmoptions' file detected");
+                	Object[] memOptions = { "256mb", "512mb", "1024mb (1gb)", "2048mb (2gb)", "CANCEL" };
+                    int memChosen = JOptionPane.showOptionDialog(labelVersion, "CURRENT MIRTH DB MEMORY: " + currentMem + "b\nPlease select the new memory from the following options:\n\nNOTE: Review the computer's available memory before selecting!\n             Anything over 1gb is likely unnecessary.", "SELECT MIRTH MEMORY", 0, 2, null, memOptions, memOptions[1]);
+                    if (memChosen < 0 || memChosen == 4)
+                    {
+                    	logCommands.exportToLog("MIRTH DATABASE MEMORY CHANGES CANCELLED. No action was taken");
+                    }
+                    else if (memChosen >= 0 && memChosen < 4)
+                    {
+                    	String[] memoryToSet = {"256", "512", "1024", "2048"};
+                    	Main.updateMirthMemory(memoryToSet[memChosen]);
+                    }
+                }
+                else
+                {
+                	if(!cancelledFirstMenu == true)
+                	{
+                		logCommands.exportToLog("'mcservice.vmoptions' not found. Unable to update the Mirth database memory");
+                	}                	
                 }
             }
             else 
@@ -1983,7 +2080,11 @@ public class applicationWindow extends JFrame implements ActionListener
         JButton btn7 = new JButton("REPAIR KEYSTORE");
         btn7.setForeground(Color.BLACK);
         btn7.setBackground(new java.awt.Color(255, 194, 140));
+        JButton btn9 = new JButton("SET MIRTH MEMORY");
+        btn9.setForeground(Color.BLACK);
+        btn9.setBackground(new java.awt.Color(188,148,255));
         otherPanel.add(btn7);
+        otherPanel.add(btn9);
         mainPanel.add(otherPanel);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -2020,6 +2121,7 @@ public class applicationWindow extends JFrame implements ActionListener
             else if (src == btn6) result[0] = 6;
             else if (src == btn7) result[0] = 7;
             else if (src == btn8) result[0] = 8;
+            else if (src == btn9) result[0] = 9;
             else if (src == btnCancel) result[0] = -1;
             dialog.dispose();
         };
@@ -2032,6 +2134,7 @@ public class applicationWindow extends JFrame implements ActionListener
         btn6.addActionListener(al);
         btn7.addActionListener(al);
         btn8.addActionListener(al);
+        btn9.addActionListener(al);
         btnCancel.addActionListener(al);
 
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -2054,6 +2157,7 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	else
     	{
+    		changeTheme(2, "startedApp");
     		System.out.println("No MCC-Settings.config file detected");
     		logCommands.exportDevLogItem("No MCC-Settings.config file detected");
     	}
@@ -2087,13 +2191,51 @@ public class applicationWindow extends JFrame implements ActionListener
     		Path mccFile = Paths.get(currentDir + "\\MCC-Settings.config");
             try 
             {
+            	Boolean foundTheme = false;
                 BufferedReader reader = Files.newBufferedReader(mccFile);
                 String line;
 
                 while ((line = reader.readLine()) != null) 
                 {
-                	if(line.contains("Theme: "))
+                	
+                	if(line.contains("SFTP Gen: "))
                 	{
+                		String genChoice = line.replace("SFTP Gen: ", "");
+                		if(genChoice.equals("true"))
+                		{
+                			sftpGenStatus = true;
+                			channelExport.setSFTPGeneration(true);
+                		}
+                		else if(genChoice.equals("false"))
+                		{
+                			sftpGenStatus = false;
+                			channelExport.setSFTPGeneration(false);
+                		}
+                		else
+                		{
+                			logCommands.exportDevLogItem("Invalid SFTP Channel generation setting in 'MCC-Settings.config' file. Ignorning");
+                		}
+                	}
+                	else if(line.contains("Backup Gen: "))
+                	{
+                		String genChoice = line.replace("Backup Gen: ", "");
+                		if(genChoice.equals("true"))
+                		{
+                			mccBackupGenStatus = true;
+                			channelExport.setAutoBackupChannelGeneration(true);
+                		}
+                		else if(genChoice.equals("false"))
+                		{
+                			mccBackupGenStatus = false;
+                			channelExport.setAutoBackupChannelGeneration(false);
+                		}
+                		else
+                		{
+                			logCommands.exportDevLogItem("Invalid 'MCC- Backup Channel' generation setting in 'MCC-Settings.config' file. Ignorning");
+                		}
+                	}
+                	else if(line.contains("Theme: "))
+                	{                		
                 		String targetTheme = line.replace("Theme: ", "");
                 		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE"};
                 		for(int mythemes=0;mythemes<themes.length;mythemes++)
@@ -2101,12 +2243,19 @@ public class applicationWindow extends JFrame implements ActionListener
                 			if(targetTheme.equals(themes[mythemes]))
                 			{
                 				readThemeFromConfigFile = true;
+                				foundTheme = true;
                 				changeTheme(mythemes, themes[mythemes]);
                 			}
-                		}
+                		} 
                 	}
                 }
                 reader.close();
+                
+                if(foundTheme == false)
+        		{
+        			readThemeFromConfigFile = true;
+        			changeTheme(2, "LIGHT");
+        		}
             } 
             catch (IOException e) 
             {
@@ -2122,11 +2271,12 @@ public class applicationWindow extends JFrame implements ActionListener
     	return currentDir;
     }
     
-    public static String writeConfigFile(String themeName)
+    public static String writeConfigFile()
     {
     	Path mccFile = Paths.get(getCurrentDir()+"\\MCC-Settings.config");
     	    	
-    	String textToWrite = "# *************************************************************************\n# ***              DO NOT TOUCH OR EDIT THIS FILE!                      ***\n# *************************************************************************\nTheme: " + themeName.toUpperCase();
+    	//String textToWrite = "# *************************************************************************\n# ***              DO NOT TOUCH OR EDIT THIS FILE!                      ***\n# *************************************************************************\nTheme: " + themeName.toUpperCase();
+    	String textToWrite = "# *************************************************************************\n# ***              DO NOT TOUCH OR EDIT THIS FILE!                      ***\n# *************************************************************************\nSFTP Gen: " + sftpGenStatus + "\nBackup Gen: " + mccBackupGenStatus + "\nTheme: " + loadTheme.toUpperCase();
     	
     	try 
     	{
@@ -2164,5 +2314,17 @@ public class applicationWindow extends JFrame implements ActionListener
     {
     	backupRunForBlowout = true;
     	return backupRunForBlowout;
+    }
+    
+    public static String displayCorruptDBPopup()
+    {
+    	//Will display 3 times before not displaying any more for the current session
+    	if(popupNo < 3)
+    	{
+    		popupNo++;
+    		JOptionPane.showMessageDialog(labelVersion, "MCC was unable to successfully access the Mirth database.\n\nAn error related to Log file corruption was thrown.\nIt is suggested to run a 'REPAIR CORRUPT DB' under\nthe 'MORE FUNCTIONS' button.", "LOG FILE CORRUPTION WARNING" , JOptionPane.WARNING_MESSAGE);
+    	}
+    	
+    	return "Window opened";
     }
 }

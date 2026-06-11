@@ -577,9 +577,39 @@ public class fullConfigExport
         }
         catch (Exception e) 
         {
-        	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Is the service running? Or is something else connected to the Mirth DB?");
-        	logCommands.exportToLog("If the Mirth Database path has been changed, please confirm you're connected to the proper folder");
-            e.printStackTrace();
+            //Added in 2.2.9. A pop-up prompting the user to run the repair command will appear if a corrupt log file was found
+        	//Added loop to iterate through the whole error and its reasons because exception e does not contain the log error
+        	boolean foundLogCorruption = false;
+        	
+        	Throwable currentMessage = e;
+        	while (currentMessage != null)
+        	{
+        		if(currentMessage.getMessage() != null && currentMessage.getMessage().contains("Log record"))
+        		{
+        			foundLogCorruption = true;
+        			break;
+        		}
+        		currentMessage = currentMessage.getCause();
+        	}
+        	
+            if(foundLogCorruption == true)
+            {
+            	logCommands.exportDevLogItem("Error when attempting to detect Mirth version");
+            	logCommands.exportDevLogItem("Execption contained 'Log record', likely pointing towards Log file corruption in the Mirth DB.");
+            	
+            	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Possible database corruption detected.");
+            	logCommands.exportToLog("Run a 'REPAIR CORRUPT DB' under the 'MORE FUNCTIONS' button.");
+            	applicationWindow.displayCorruptDBPopup();
+            	e.printStackTrace();
+            }
+            else
+            {
+            	logCommands.exportToLog("ERROR: Failed to connect to Mirth database. Is the service running? Or is something else connected to the Mirth DB?");
+            	logCommands.exportToLog("If the Mirth Database path has been changed, please confirm you're connected to the proper folder");
+                e.printStackTrace();
+            }
+            
+            System.out.println("==== " + e.toString() + " ====");
         }
         return versionInfo;
     }

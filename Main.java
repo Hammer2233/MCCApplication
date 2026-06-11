@@ -9,6 +9,7 @@ import java.util.Date;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -489,6 +490,124 @@ public class Main
         }        
     	
     	return "config read";
+    }
+    
+    //added in 2.2.9
+    public static String updateMirthMemory(String newMemory)
+    {
+    	ArrayList mcServiceFileCopy = new ArrayList();
+    	
+    	System.out.println("Beginning update to 'mcservice.vmoptions' file");
+    	logCommands.exportDevLogItem("Beginning update to 'mcservice.vmoptions' file");
+    	
+    	String mcserviceFilePath = dbPath + "mcservice.vmoptions";
+    	File mcserviceFile = new File(mcserviceFilePath);
+    	
+    	//First part reads the current mcservice.vmoptions file and copies out the file, replacing the memory with the new option
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(mcserviceFilePath)))
+		{
+		    String line;
+		    while ((line = reader.readLine()) != null) 
+		    {
+		    	if(line.contains("-Xmx"))
+		        {
+		    		logCommands.exportDevLogItem("Current line: '" + line + "'");
+		        	line = ("-Xmx" + newMemory + "m");
+		        	logCommands.exportDevLogItem("Updating current line to: '" + line + "'");
+		        }
+		    	mcServiceFileCopy.add(line.toString() + "\n");
+		    }
+		    reader.close();
+		} 
+		catch (IOException e) 
+		{
+		    e.printStackTrace();
+		}
+        
+        //Second part renames the original mcservice.vmoptions file then creates a new one
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss-SSS");
+        Date currentDate = new Date();
+        String copyOldFile = mcserviceFilePath + "_BACKUP_" + dateFormat.format(currentDate);
+        
+        File currentFile = new File(mcserviceFilePath);
+        File newFile = new File(copyOldFile);
+        try 
+        {
+        	Files.move(currentFile.toPath(), newFile.toPath(), new java.nio.file.CopyOption[0]);
+        	logCommands.exportToLog("Renamed 'mcservice.vmoptions' file to: '" + copyOldFile + "'");
+        } 
+        catch (IOException ex) 
+        {
+        	logCommands.exportToLog("Failed to rename 'mcservice.vmoptions' file. Error: " + ex.toString());
+        	if(ex.toString().contains("AccessDeniedException"))
+        	{
+        		logCommands.exportToLog("'AccessDeniedException' is often thrown with permission errors. Please run MCC.jar via the batch file and try again");
+        	}
+        }
+        
+        //final part writes the stored and updated ArrayList values into the newly created file
+        System.out.println("Targeting file: " + mcserviceFilePath);
+        try (PrintWriter fileWriter = new PrintWriter(mcserviceFilePath)) 
+        {
+        	for(int copyOut=0;copyOut<mcServiceFileCopy.size();copyOut++)
+        	{
+        		fileWriter.print(mcServiceFileCopy.get(copyOut));
+        	}
+        	logCommands.exportToLog("Successfully updated 'mcservice.vmoptions' file with the new memory");
+        	logCommands.exportToLog("Start the Mirth service to apply the changes");
+        } 
+        catch (FileNotFoundException e) 
+        {
+            e.printStackTrace();
+        }
+        
+    	return "updated";
+    }
+    
+    public static Boolean detectedMirthMemoryFile()
+    {
+    	Boolean foundFile = false;
+    	
+    	determineDBLocation();
+    	File mcserviceFile = new File(dbPath + "mcservice.vmoptions");
+    	if(mcserviceFile.exists())
+    	{
+    		foundFile = true;
+    	}
+    	
+    	System.out.println("Target Mirth DB Memory File= " + dbPath + "mcservice.vmoptions");
+    	logCommands.exportDevLogItem("Target Mirth DB Memory File= " + dbPath + "mcservice.vmoptions");
+    	return foundFile;
+    }
+    
+    public static String readCurrentMirthMemory()
+    {
+    	String currentMem = "";
+
+    	String mcserviceFilePath = dbPath + "mcservice.vmoptions";
+        File mcserviceFile = new File(mcserviceFilePath);
+        	
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(mcserviceFilePath)))
+        {
+    		String line;
+    		while ((line = reader.readLine()) != null) 
+    		{
+    			if(line.contains("-Xmx"))
+    		    {
+    		    	currentMem = line.replace("-Xmx", "");
+    		    	System.out.println("Current Mirth DB Memory: " + currentMem + "b");
+    		    	logCommands.exportDevLogItem("Current Mirth DB Memory: " + currentMem + "b");
+    		    }
+    		}
+    		reader.close();
+    	} 
+    	catch (IOException e) 
+    	{
+    		 e.printStackTrace();
+    	}
+
+    	
+    	return currentMem;
     }
     
     public static boolean getWindowStatus()

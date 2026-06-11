@@ -644,7 +644,7 @@ public class SQLSearch extends JDialog
         catch (SQLException e) 
         {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(SQLQueryName, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         //applicationWindow.killConnection(host);
         killSQLConnection(host);
