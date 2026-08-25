@@ -605,7 +605,21 @@ public class SQLCommand
     		//gets size of the appdata and MirthDB folder
     		File directory = new File(host.replace("jdbc:derby:", "").replace("\\mirthdb;", ""));
     		long appdataSize = getFolderSize(directory);
-    		dbInformationText = dbInformationText + "'appdata' folder size: " + appdataSize/1000.0 + "kb / " + appdataSize/1000000.0 + "mb / " + appdataSize/1000000000.0 + "gb\n\n";
+    		dbInformationText = dbInformationText + "'appdata' folder size: " + appdataSize/1000.0 + "kb / " + appdataSize/1000000.0 + "mb / " + appdataSize/1000000000.0 + "gb\n";
+    		
+    		//added in 2.2.9, this returns the Mirth Database memory if the file is found
+    		boolean foundMemoryFile = false;
+    		foundMemoryFile = Main.detectedMirthMemoryFile();
+    		if(foundMemoryFile == true)
+    		{
+    			String currentMem = Main.readCurrentMirthMemory();
+    			dbInformationText += "Mirth Database Memory: " + currentMem + "b\n\n";
+    		}
+    		else
+    		{
+    			dbInformationText += "\n";
+    			logCommands.exportDevLogItem("'mcservice.vmoptions' file not found. Unable to determine current DB's memory.");
+    		}
     		
             String query = "";
             int noOfRanQueries = 0;

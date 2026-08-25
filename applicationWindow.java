@@ -125,7 +125,7 @@ public class applicationWindow extends JFrame implements ActionListener
         
         // button area. West of application
         //change for each version
-        setTitle("MCC -2.2.9");
+        setTitle("MCC -2.2.10");
         westPanel = new JPanel();
         JPanel fillerPanel = new JPanel();
         fillerPanel.setPreferredSize(new Dimension(100, 95));
@@ -946,13 +946,15 @@ public class applicationWindow extends JFrame implements ActionListener
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==3)
             {
-            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint", "GameCube"};
-                int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
-                if(changeThemeChoice >=0)
-                {
-                	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
-                }
-                System.out.println("Chosen: " + changeThemeChoice);                   
+            	showThemeMenu();
+            	
+//            	Object[] options = { "Original", "Dark", "Light", "Ocean", "Bad lands", "Merby", "Ravens", "Mint", "GameCube"};
+//                int changeThemeChoice = JOptionPane.showOptionDialog(labelVersion, "Select Theme from Options Below:", "THEME SELECTION", 0, 2, iconImg, options, options[1]);
+//                if(changeThemeChoice >=0)
+//                {
+//                	changeTheme(changeThemeChoice, options[changeThemeChoice].toString());
+//                }
+//                System.out.println("Chosen: " + changeThemeChoice);                   
             }
             if(captured.toLowerCase().equals(validCommands[i]) && i==4)
             {
@@ -2143,6 +2145,144 @@ public class applicationWindow extends JFrame implements ActionListener
         return result[0];
     }
     
+    //added in 2.2.10 to reformat the Themes menu
+    private static int showThemeMenu() 
+    {
+    	java.awt.Window parent = javax.swing.SwingUtilities.getWindowAncestor(labelVersion);
+        final JDialog dialog = new JDialog(parent, "MORE FEATURES", JDialog.ModalityType.APPLICATION_MODAL);
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+    	
+        //First Row
+        JLabel dbHeader = new JLabel("Themes:");
+        dbHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(dbHeader);
+
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        row1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btn1 = new JButton("Original");
+        btn1.setForeground(Color.BLACK);
+        btn1.setBackground(new java.awt.Color(214, 216, 233));
+        JButton btn2 = new JButton("Dark");
+        btn2.setForeground(Color.WHITE);
+        btn2.setBackground(new java.awt.Color(23, 21, 59));
+        JButton btn3 = new JButton("Light");
+        btn3.setForeground(Color.BLACK);
+        btn3.setBackground(new java.awt.Color(255, 247, 241));
+        JButton btn4 = new JButton("Ocean");
+        btn4.setForeground(Color.BLACK);
+        btn4.setBackground(new java.awt.Color(152, 210, 192));
+        row1.add(btn1);
+        row1.add(btn2);
+        row1.add(btn3);
+        row1.add(btn4);
+        mainPanel.add(row1);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Second Row
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        row2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btn5 = new JButton("Bad lands");
+        btn5.setForeground(Color.WHITE);
+        btn5.setBackground(new java.awt.Color(171, 68, 89));
+        JButton btn6 = new JButton("Merby");
+        btn6.setForeground(Color.WHITE);
+        btn6.setBackground(new java.awt.Color(0, 51, 102));
+        JButton btn7 = new JButton("Ravens");
+        btn7.setForeground(new java.awt.Color(188, 148, 40));
+        btn7.setBackground(new java.awt.Color(36, 16, 117));
+        JButton btn8 = new JButton("Mint");
+        btn8.setForeground(Color.BLACK);
+        btn8.setBackground(new java.awt.Color(73,255,152));
+        row2.add(btn5);
+        row2.add(btn6);
+        row2.add(btn7);
+        row2.add(btn8);
+        mainPanel.add(row2);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Third Row
+        JPanel row3 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        row3.setAlignmentX(Component.LEFT_ALIGNMENT);        
+        JButton btn9 = new JButton("GameCube");
+        btn9.setForeground(Color.WHITE);
+        btn9.setBackground(new java.awt.Color(123,44,191));
+        row3.add(btn9);
+        mainPanel.add(row3);
+
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        //Cancel button at bottom
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.setForeground(new java.awt.Color(240,40,40));
+        btnCancel.setBackground(new java.awt.Color(255, 238, 238));
+        bottomPanel.add(btnCancel);
+        mainPanel.add(bottomPanel);
+        
+        dialog.getContentPane().add(mainPanel);
+        dialog.pack();
+        
+        if (parent != null) 
+        {
+            dialog.setLocationRelativeTo(parent);
+        } 
+        else 
+        {
+            dialog.setLocationRelativeTo(null);
+        }
+        
+        final int[] result = { -1 };
+
+        ActionListener al = ev -> {
+            Object src = ev.getSource();
+            if (src == btn1) result[0] = 1;
+            else if (src == btn2) result[0] = 2;
+            else if (src == btn3) result[0] = 3;
+            else if (src == btn4) result[0] = 4;
+            else if (src == btn5) result[0] = 5;
+            else if (src == btn6) result[0] = 6;
+            else if (src == btn7) result[0] = 7;
+            else if (src == btn8) result[0] = 8;
+            else if (src == btn9) result[0] = 9;
+            else if (src == btnCancel) result[0] = -1;
+            dialog.dispose();
+        };
+        
+        btn1.addActionListener(al);
+        btn2.addActionListener(al);
+        btn3.addActionListener(al);
+        btn4.addActionListener(al);
+        btn5.addActionListener(al);
+        btn6.addActionListener(al);
+        btn7.addActionListener(al);
+        btn8.addActionListener(al);
+        btn9.addActionListener(al);
+        btnCancel.addActionListener(al);
+
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
+        
+        System.out.println("RESULT: " + result[0]);
+        
+        if(result[0] > 0)
+        {
+        	int themeInt = result[0]-1;
+        	String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE"};
+        	changeTheme(themeInt, themes[themeInt]);
+        }
+        else
+        {
+        	logCommands.exportToLog("NO THEME SELECTED");
+        }
+
+        return result[0];
+    }
+    
     //added in 2.2.4 - checks the running directory for any MCC configuration files, then applies the settings
     public static String checkForConfigFile()
     {
@@ -2178,7 +2318,7 @@ public class applicationWindow extends JFrame implements ActionListener
     //added in 2.2.8 to check if MCC is in a Zip file. It will alert the user
     public static String zipFileAlert()
     {
-    	JOptionPane.showMessageDialog(labelVersion, "Unable to create the MCC-TRACE file. This likely means\nthat MCC.jar is not unzipped.\n\nPlease ensure MCC is unzipped before you proceed.", "CHECK MCC's LOCATION ALERT", JOptionPane.ERROR_MESSAGE);
+    	JOptionPane.showMessageDialog(labelVersion, "Unable to create the MCC-TRACE file. This likely means\nthat MCC.jar is not unzipped or was not ran as admin.\n\nPlease ensure MCC is unzipped and elevated before you\nproceed.", "CHECK MCC's LOCATION ALERT", JOptionPane.ERROR_MESSAGE);
     	
     	return "";
     }
