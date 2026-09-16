@@ -338,7 +338,8 @@ public class SQLSearch extends JDialog
                     	else
                     	{
                     		focusedResultSpace.setText(cellValue.toString().replace("\r", "\n"));
-                    	}                        
+                    	}          
+                    	focusedResultSpace.setCaretPosition(0);
                     }                    
                 } 
                 else 
@@ -583,70 +584,94 @@ public class SQLSearch extends JDialog
     private static void loadDataCustom(String queryText) 
     {
         String host = Main.returnHost();
-        try (Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(queryText)) 
-        {        	
-        	ResultSetMetaData rsmd = rs.getMetaData();            
-            DefaultTableModel model = new DefaultTableModel();
-            int columnCount = rsmd.getColumnCount();
-            
-            for(int i=1; i<=columnCount;i++)
-            {
-            	model.addColumn(rsmd.getColumnName(i));
-            }
+        String trimmed = queryText.trim().toUpperCase();
 
-            while (rs.next()) 
+        try (Connection conn = DriverManager.getConnection(host);
+             Statement stmt = conn.createStatement()) 
+        {
+
+            //added in 2.2.10 to allow both queries and update commands via the SQL Search window
+            if (trimmed.startsWith("SELECT")) 
             {
-            	Object[] rowData = new Object[columnCount];
-            	for(int j=1; j<=columnCount;j++)
-            	{
-            		String currentColumnName = rsmd.getColumnName(j);
-            		
-            		if("CLOB".equalsIgnoreCase(rsmd.getColumnTypeName(j))) 
-            		{
-                        Clob clob = rs.getClob(j);
-                        if (clob != null) 
-                        {
-                            //Convert CLOB to String
-                            String clobData = clobToString(clob);
-                            rowData[j - 1] = clobData; 
-                        } 
-                        else 
-                        {
-                        	rowData[j - 1] = null;
-                        }
-                    }
-            		else if ("CONTENT_TYPE".equalsIgnoreCase(currentColumnName))
+                //Select logic that returns strict queries
+                try (ResultSet rs = stmt.executeQuery(queryText)) 
+                {
+                    ResultSetMetaData rsmd = rs.getMetaData();
+                    DefaultTableModel model = new DefaultTableModel();
+                    int columnCount = rsmd.getColumnCount();
+
+                    for (int i = 1; i <= columnCount; i++) 
                     {
-                        int contentTypeId = rs.getInt(j);
-                        
-                        //Perform safe conversion check
-                        if (contentTypeId > 0 && contentTypeId <= 15)
-                        {
-                            rowData[j - 1] = contentTypeConvert(contentTypeId);
-                        }
-                        else
-                        {
-                            rowData[j - 1] = null;
-                        }
+                        model.addColumn(rsmd.getColumnName(i));
                     }
-            		else
-            		{
-                        rowData[j - 1] = rs.getObject(j);
-                    }
-            	}
-            	model.addRow(rowData);                
-            }
 
-            table.setModel(model);
-            System.out.println("Number of rows in model: " + model.getRowCount());
-            logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
+                    while (rs.next()) 
+                    {
+                        Object[] rowData = new Object[columnCount];
+                        for (int j = 1; j <= columnCount; j++) 
+                        {
+                            String currentColumnName = rsmd.getColumnName(j);
+
+                            if ("CLOB".equalsIgnoreCase(rsmd.getColumnTypeName(j))) 
+                            {
+                                Clob clob = rs.getClob(j);
+                                if (clob != null) 
+                                {
+                                    String clobData = clobToString(clob);
+                                    rowData[j - 1] = clobData;
+                                } 
+                                else 
+                                {
+                                    rowData[j - 1] = null;
+                                }
+                            } 
+                            else if ("CONTENT_TYPE".equalsIgnoreCase(currentColumnName)) 
+                            {
+                                int contentTypeId = rs.getInt(j);
+
+                                if (contentTypeId > 0 && contentTypeId <= 15) 
+                                {
+                                    rowData[j - 1] = contentTypeConvert(contentTypeId);
+                                } 
+                                else 
+                                {
+                                    rowData[j - 1] = null;
+                                }
+                            } 
+                            else 
+                            {
+                                rowData[j - 1] = rs.getObject(j);
+                            }
+                        }
+                        model.addRow(rowData);
+                    }
+
+                    table.setModel(model);
+                    System.out.println("Number of rows in model: " + model.getRowCount());
+                    logCommands.exportDevLogItem("Number of rows in model: " + model.getRowCount());
+                }
+            } 
+            else 
+            {
+                //added in 2.2.10 to allow update queries
+                int affected = stmt.executeUpdate(queryText);
+
+                //Show SQL command information
+                focusedResultSpace.setText("Command executed.\nRows affected: " + affected);
+                logCommands.exportDevLogItem("Non-select command executed. Rows affected: " + affected);
+            }
         } 
         catch (SQLException e) 
         {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(SQLQueryName, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(
+                SQLQueryName,
+                "Error loading data: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
         }
-        //applicationWindow.killConnection(host);
+
         killSQLConnection(host);
     }
     

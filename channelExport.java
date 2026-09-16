@@ -94,6 +94,9 @@ public class channelExport
     	backupFolderPath = Main.getBackupFolder();
     	clearChannelFolder();
     	
+    	//added in 2.2.10 to fix bug where this value would be saved as true even when switching to another DB without an SFTP channel
+    	isSFTPChannelNeeded = false;
+    	
     	//clears arraylists
     	channelIDs.clear();
     	channelNames.clear();
@@ -682,10 +685,10 @@ public class channelExport
     	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");
     	String[] splitVersion = mirthVersion.split("\\.");
     	
-    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 10)
+    	if(Integer.parseInt(splitVersion[0]) > 3 || Integer.parseInt(splitVersion[0]) >= 3 && Integer.parseInt(splitVersion[1]) >= 6 && Integer.parseInt(splitVersion[2]) >= 1)
     	{
-    		System.out.println("I am greater than/equal to Mirth version 3.10.0");
-    		logCommands.exportDevLogItem("I am greater than/equal to Mirth version 3.10.0");
+    		System.out.println("I am greater than/equal to Mirth version 3.6.1");
+    		logCommands.exportDevLogItem("I am greater than/equal to Mirth version 3.6.1");
     		if(!channelNames.contains("SFTP Restart Channel") && !channelIDs.contains("07f073af-c1b5-43a1-be3b-6d211f08cabb"))
     		{
     			System.out.println("isSFTPChannelNeeded: " + isSFTPChannelNeeded);
@@ -785,8 +788,8 @@ public class channelExport
     	}
     	else
     	{
-    		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
-    		logCommands.exportDevLogItem("Mirth version is '" + mirthVersion + "'. Mirth 3.10.0 or higher is required for an SFTP Restart channel");
+    		System.out.println("Mirth version is '" + mirthVersion + "'. Mirth 3.6.1 or higher is required for an SFTP Restart channel");
+    		logCommands.exportDevLogItem("Mirth version is '" + mirthVersion + "'. Mirth 3.6.1 or higher is required for an SFTP Restart channel");
     	}
     	
     	return "SFTP Restart Channel Added";
