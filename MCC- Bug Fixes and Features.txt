@@ -1,8 +1,8 @@
 =================================
 MCC (Mirth Configuration Creator)
 Programmed By: Caleb Meyers
-Current Version: 2.2.9
-Last Update: 6/11/26
+Current Version: 2.2.10
+Last Update: 9/15/26
 =================================
 
 Version 2.1.0:
@@ -74,3 +74,14 @@ Version 2.2.9:
 -Added SFTP Channel generation and MCC- Backup Channel generation settings to the MCC-Settings.config file
 -Fixed issue where errors/warnings when searching via "CUSTOM SQL QUERY" were not snapping to the search window
 -Added the ability to change the Mirth database memory from the MCC GUI with 4 preset MB options. The current Mirth database memory is also displayed in that menu.
+-Added the Mirth Database Memory value to the DATABASE OVERVIEW report if it is found in the Mirth directory
+
+Version 2.2.10:
+-Updated the SFTP Restart Channel to now generate in versions 3.6.1 and higher
+-Reformatted the Themes menu and added additional themes
+-Changed the order of the channels and their statuses to sort alphabetically when viewed under the DATABSE OVERVIEW report
+-Fixed the cursor snap point to start at the beginning of the selected cell when searching/querying channels and/or the Mirth database via SQL SEARCH
+-Added the ability to run update SQL commands to the Mirth database via the "CUSTOM SQL QUERY" under "SQL SEARCH"
+-Added a loading icon when running a Channel Export or Full Configuration Export
+-Added new option under "MORE FUNCTIONS" to pull SFTP credentials for active channels in a Mirth database >=3.5.1
+-Added new database corruption detection error to prompt the user to run a "REPAIR CORRUPT DB"
