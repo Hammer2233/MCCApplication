@@ -46,9 +46,12 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.JOptionPane;
 
 import java.nio.file.Path;
@@ -308,6 +311,8 @@ public class applicationWindow extends JFrame implements ActionListener
         //logTextArea = new JTextArea(5,10);
         logTextArea.setLineWrap(true);
         logTextArea.setEditable(false);
+        
+        ((javax.swing.text.DefaultCaret) logTextArea.getCaret()).setUpdatePolicy(javax.swing.text.DefaultCaret.ALWAYS_UPDATE);
 
         logTextScroll = new JScrollPane(logTextArea);
         logTextScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -371,179 +376,82 @@ public class applicationWindow extends JFrame implements ActionListener
         }
     }
 
-    public static String runChannelExport()
-    {
-    	String serviceState = Main.checkMirthService();
-    	String host = Main.returnHost();
-    	
-    	//added in 2.2.3
-    	boolean changedDirCheck = Main.changedDirTF();
-    	if(changedDirCheck == true)
-    	{
-    		logCommands.exportToLog("Performing backup. NOTE: Please be patient as this may take up to 2 minutes to run");
-    		Main.setBackupFolder();
-            channelExport.isFullMirthExportCheck("NO");
-            System.out.println("PERFORMING CHANNEL BACKUP");
-            logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
-            //String host = Main.returnHost();
-            channelExport exportChannels = new channelExport();
-            channelExport.exportChannels(host);
-            channelExport exportMetadata = new channelExport();
-            try 
+    //Updated in 2.2.10 to enable the loading bar
+    public static String runChannelExport() 
+    {        
+        runTaskWithLoading(labelVersion, () -> 
+        {        
+            String serviceState = Main.checkMirthService();
+            String host = Main.returnHost();
+            
+            boolean changedDirCheck = Main.changedDirTF();
+            
+            if (changedDirCheck) 
             {
-                channelExport.exportMetadata(host);
+                executeExport(host);
             } 
-            catch (FileNotFoundException e1) 
+            else 
             {
-                e1.printStackTrace();
-            }
-            logCommands.returnArchivedChannels(Main.getBackupFolder()+"\\channelBackup\\");
-            setLogWindow();
-            Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
-    	}
-    	else
-    	{
-    		if(serviceState == "STOPPED")
-        	{
-                logCommands.exportToLog("Performing backup. NOTE: Please be patient as this may take up to 2 minutes to run");
-        		Main.setBackupFolder();
-                channelExport.isFullMirthExportCheck("NO");
-                System.out.println("PERFORMING CHANNEL BACKUP");
-                logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
-                //String host = Main.returnHost();
-                channelExport exportChannels = new channelExport();
-                channelExport.exportChannels(host);
-                channelExport exportMetadata = new channelExport();
-                try 
+                if ("STOPPED".equalsIgnoreCase(serviceState)) 
                 {
-                    channelExport.exportMetadata(host);
+                    executeExport(host);
                 } 
-                catch (FileNotFoundException e1) 
+                else if ("STARTED".equalsIgnoreCase(serviceState)) 
                 {
-                    e1.printStackTrace();
+                    logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+                    
+                    javax.swing.SwingUtilities.invokeLater(() -> 
+                        JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue")
+                    );
+                } 
+                else 
+                {
+                    logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
                 }
-                logCommands.returnArchivedChannels(Main.getBackupFolder()+"\\channelBackup\\");
-                setLogWindow();
-                Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
-        	}
-        	else if(serviceState == "STARTED")
-        	{
-        		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-        		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-        	}
-        	else
-        	{
-        		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-        	}
-    	}
-    	killConnection(host);
+            }
+            killConnection(host);   
+        });
         return "exported channels";
     }
 
+    
     private static class createFullMirthBackup implements ActionListener
     {
         @Override
         public void actionPerformed(ActionEvent e)
         {
-        	String serviceState = Main.checkMirthService();
-        	String host = Main.returnHost();
-        	
-        	//added in 2.2.3
-        	boolean changedDirCheck = Main.changedDirTF();
-        	if(changedDirCheck == true)
-        	{
-        		channelExport.clearChannelFolder();
-                Main.setBackupFolder();
-                logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
-                logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
-                channelExport.isFullMirthExportCheck("YES");
-                
-                //String host = Main.returnHost();
-                channelExport exportChannels = new channelExport();
-                channelExport.exportChannels(host);
-                channelExport exportMetadata = new channelExport();
-                try 
-                {
-                    channelExport.exportMetadata(host);
-                } 
-                catch (FileNotFoundException e1) 
-                {
-                    e1.printStackTrace();
-                }
-                channelExport.isFullMirthExportCheck("NO");
-                logCommands.exportToLog("EXPORTED - Channels and Metadata");
-
-                try 
-                {
-                    fullConfigExport.exportChannelGroups(host);
-                } 
-                catch (SQLException e1) 
-                {
-                    e1.printStackTrace();
-                }
-                //setLogWindow();
-                catch (FileNotFoundException e1)
-                {
-                    e1.printStackTrace();
-                }
-                Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
-                logCommands.exportToLog("Full configuration exported to: " + Main.getBackupFolder() +"fullMirthExport");
-        	}
-        	else
-        	{
-        		if(serviceState == "STOPPED")
-            	{
-                    channelExport.clearChannelFolder();
-                    Main.setBackupFolder();
-                    logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
-                    logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
-                    //pushAlertThrough();
-                    channelExport.isFullMirthExportCheck("YES");
-                    
-                    //String host = Main.returnHost();
-                    channelExport exportChannels = new channelExport();
-                    channelExport.exportChannels(host);
-                    channelExport exportMetadata = new channelExport();
-                    try 
-                    {
-                        channelExport.exportMetadata(host);
-                    } 
-                    catch (Exception e1) 
-                    {
-                    	System.out.println("UNABLE TO EXPORT CHANNEL METADATA");
-                    	logCommands.exportDevLogItem("UNABLE TO EXPORT CHANNEL METADATA");
-                        e1.printStackTrace();
-                    }
-                    channelExport.isFullMirthExportCheck("NO");
-                    logCommands.exportToLog("EXPORTED - Channels and Metadata");
-
-                    try 
-                    {
-                        fullConfigExport.exportChannelGroups(host);
-                    } 
-                    catch (SQLException e1) 
-                    {
-                        e1.printStackTrace();
-                    }
-                    //setLogWindow();
-                    catch (FileNotFoundException e1)
-                    {
-                        e1.printStackTrace();
-                    }
-                    Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
-                    logCommands.exportToLog("Full configuration exported to: " + Main.getBackupFolder() +"fullMirthExport");
-                    killConnection(host);
-            	}
-            	else if(serviceState == "STARTED")
-            	{
-            		logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
-            		JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue");
-            	}
-            	else
-            	{
-            		logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
-            	}
-        	}	
+        	runTaskWithLoading(labelVersion, () -> 
+            {
+	        	String serviceState = Main.checkMirthService();
+	        	String host = Main.returnHost();
+	        	
+	        	//added in 2.2.3
+	        	boolean changedDirCheck = Main.changedDirTF();
+	        	if (changedDirCheck) 
+	            {
+	        		executeFullExport(host);
+	            } 
+	            else 
+	            {
+	                if ("STOPPED".equalsIgnoreCase(serviceState)) 
+	                {
+	                    executeFullExport(host);
+	                } 
+	                else if ("STARTED".equalsIgnoreCase(serviceState)) 
+	                {
+	                    logCommands.exportToLog("Mirth Service is not stopped. Please stop the service to continue");
+	                    
+	                    javax.swing.SwingUtilities.invokeLater(() -> 
+	                        JOptionPane.showMessageDialog(labelVersion, "Mirth Service is not stopped.\nPlease stop the service to continue")
+	                    );
+	                } 
+	                else 
+	                {
+	                    logCommands.exportToLog("Mirth Service error encountered. Please ensure the service is installed");
+	                }
+	            }
+	            killConnection(host);  
+            });	
         }
     }
 
@@ -1538,6 +1446,196 @@ public class applicationWindow extends JFrame implements ActionListener
     		moreFunctions.setForeground(Color.BLACK);
     		moreFunctions.setBackground(new java.awt.Color(255,251,0));
     	}
+    	else if(chosenTheme == 9)
+    	{    		
+    		//LABDAQ theme    		
+    		logTextArea.setBackground(new java.awt.Color(132,164,196));
+    		logTextArea.setForeground(Color.WHITE);
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(0,57,116));
+    		middleButtonPanel.setBackground(new java.awt.Color(0,57,116));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(0,57,116));
+    		bottomButtonPanel.setBackground(new java.awt.Color(0,57,116));
+    		westPanel.setBackground(new java.awt.Color(0,57,116));
+    		centerPanel.setBackground(new java.awt.Color(0,57,116));
+    		imagePanel.setBackground(new java.awt.Color(0,57,116));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.WHITE);
+    		archiveChannels.setBackground(new java.awt.Color(179, 49, 26));
+
+    		fullMirthExport.setForeground(Color.WHITE);
+    		fullMirthExport.setBackground(new java.awt.Color(0,120,151));
+
+    		checkUsernameButton.setForeground(Color.WHITE);
+    		checkUsernameButton.setBackground(new java.awt.Color(244,145,46));
+
+    		changeUNandPW.setForeground(Color.WHITE);
+    		changeUNandPW.setBackground(new java.awt.Color(244,145,46));
+
+    		changeBackupPath.setForeground(Color.WHITE);
+    		changeBackupPath.setBackground(new java.awt.Color(104,206,87));
+
+    		changeMirthDirPath.setForeground(Color.WHITE);
+    		changeMirthDirPath.setBackground(new java.awt.Color(104,206,87));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(132,128,168));
+    	}
+    	else if(chosenTheme == 10)
+    	{    		
+    		//Ember theme    		
+    		logTextArea.setBackground(new java.awt.Color(157, 2, 8));
+    		logTextArea.setForeground(new java.awt.Color(255, 186, 8));
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(55, 6, 23));
+    		middleButtonPanel.setBackground(new java.awt.Color(55, 6, 23));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(55, 6, 23));
+    		bottomButtonPanel.setBackground(new java.awt.Color(55, 6, 23));
+    		westPanel.setBackground(new java.awt.Color(55, 6, 23));
+    		centerPanel.setBackground(new java.awt.Color(232, 93, 4));
+    		imagePanel.setBackground(new java.awt.Color(55, 6, 23));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.WHITE);
+    		archiveChannels.setBackground(new java.awt.Color(106, 4, 15));
+
+    		fullMirthExport.setForeground(Color.WHITE);
+    		fullMirthExport.setBackground(new java.awt.Color(157, 2, 8));
+
+    		checkUsernameButton.setForeground(Color.WHITE);
+    		checkUsernameButton.setBackground(new java.awt.Color(3, 7, 30));
+
+    		changeUNandPW.setForeground(Color.WHITE);
+    		changeUNandPW.setBackground(new java.awt.Color(3, 7, 30));
+
+    		changeBackupPath.setForeground(Color.WHITE);
+    		changeBackupPath.setBackground(new java.awt.Color(250, 163, 7));
+
+    		changeMirthDirPath.setForeground(Color.WHITE);
+    		changeMirthDirPath.setBackground(new java.awt.Color(244, 140, 6));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(208, 0, 0));
+    	}
+    	else if(chosenTheme == 11)
+    	{    		
+    		//Unicorn theme    		
+    		logTextArea.setBackground(new java.awt.Color(72, 149, 239));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(63, 55, 201));
+    		middleButtonPanel.setBackground(new java.awt.Color(63, 55, 201));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(63, 55, 201));
+    		bottomButtonPanel.setBackground(new java.awt.Color(63, 55, 201));
+    		westPanel.setBackground(new java.awt.Color(63, 55, 201));
+    		centerPanel.setBackground(new java.awt.Color(181, 23, 158));
+    		imagePanel.setBackground(new java.awt.Color(63, 55, 201));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.WHITE);
+    		archiveChannels.setBackground(new java.awt.Color(72, 12, 168));
+
+    		fullMirthExport.setForeground(Color.WHITE);
+    		fullMirthExport.setBackground(new java.awt.Color(181, 23, 158));
+
+    		checkUsernameButton.setForeground(Color.WHITE);
+    		checkUsernameButton.setBackground(new java.awt.Color(114, 9, 183));
+
+    		changeUNandPW.setForeground(Color.WHITE);
+    		changeUNandPW.setBackground(new java.awt.Color(114, 9, 183));
+
+    		changeBackupPath.setForeground(Color.WHITE);
+    		changeBackupPath.setBackground(new java.awt.Color(67, 97, 238));
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(new java.awt.Color(76, 201, 240));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(247, 37, 133));
+    	}
+    	else if(chosenTheme == 12)
+    	{    		
+    		//Shelby theme    		
+    		logTextArea.setBackground(new java.awt.Color(230, 230, 230));
+    		logTextArea.setForeground(Color.BLACK);
+    		cmdPWLabel.setForeground(Color.BLACK);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		middleButtonPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		bottomButtonPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		westPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		centerPanel.setBackground(new java.awt.Color(244, 255, 255));
+    		imagePanel.setBackground(new java.awt.Color(244, 255, 255));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.WHITE);
+    		archiveChannels.setBackground(new java.awt.Color(214, 27, 27));
+
+    		fullMirthExport.setForeground(Color.WHITE);
+    		fullMirthExport.setBackground(new java.awt.Color(182, 0, 0));
+
+    		checkUsernameButton.setForeground(Color.BLACK);
+    		checkUsernameButton.setBackground(new java.awt.Color(255, 93, 93));
+
+    		changeUNandPW.setForeground(Color.BLACK);
+    		changeUNandPW.setBackground(new java.awt.Color(255, 93, 93));
+
+    		changeBackupPath.setForeground(Color.WHITE);
+    		changeBackupPath.setBackground(new java.awt.Color(142, 4, 4));
+
+    		changeMirthDirPath.setForeground(Color.WHITE);
+    		changeMirthDirPath.setBackground(new java.awt.Color(142, 4, 4));
+    		
+    		moreFunctions.setForeground(Color.WHITE);
+    		moreFunctions.setBackground(new java.awt.Color(255, 25, 25));
+    	}
+    	else if(chosenTheme == 13)
+    	{    		
+    		//Pub theme    		
+    		logTextArea.setBackground(new java.awt.Color(221,208,157));
+    		logTextArea.setForeground(new java.awt.Color(101,89,71));
+    		cmdPWLabel.setForeground(Color.WHITE);
+    		
+    		//background portions
+    		topButtonPanel.setBackground(new java.awt.Color(101,89,71));
+    		middleButtonPanel.setBackground(new java.awt.Color(101,89,71));
+    		bottomMidButtonsPanel.setBackground(new java.awt.Color(101,89,71));
+    		bottomButtonPanel.setBackground(new java.awt.Color(101,89,71));
+    		westPanel.setBackground(new java.awt.Color(101,89,71));
+    		centerPanel.setBackground(new java.awt.Color(186,155,123));
+    		imagePanel.setBackground(new java.awt.Color(101,89,71));
+
+    		//buttons
+    		archiveChannels.setForeground(Color.WHITE);
+    		archiveChannels.setBackground(new java.awt.Color(4,75,32));
+
+    		fullMirthExport.setForeground(Color.BLACK);
+    		fullMirthExport.setBackground(new java.awt.Color(221,208,157));
+
+    		checkUsernameButton.setForeground(Color.BLACK);
+    		checkUsernameButton.setBackground(new java.awt.Color(130,154,132));
+
+    		changeUNandPW.setForeground(Color.BLACK);
+    		changeUNandPW.setBackground(new java.awt.Color(130,154,132));
+
+    		changeBackupPath.setForeground(Color.BLACK);
+    		changeBackupPath.setBackground(new java.awt.Color(191,163,163));
+
+    		changeMirthDirPath.setForeground(Color.BLACK);
+    		changeMirthDirPath.setBackground(new java.awt.Color(191,163,163));
+    		
+    		moreFunctions.setForeground(Color.BLACK);
+    		moreFunctions.setBackground(new java.awt.Color(249,138,0));
+    	}
     	return "theme changed";
     }
     
@@ -2005,6 +2103,37 @@ public class applicationWindow extends JFrame implements ActionListener
                 	}                	
                 }
             }
+            else if(selection == 10)
+            {
+            	logCommands.exportToLog("Running information query active Mirth channels. Please wait...");
+            	String host = Main.returnHost();
+            	String SFTPInformation = SQLCommand.SFTPCredGrabber(host);
+            	
+            	if(SFTPInformation.equals("DISPLAYNOTHING"))
+            	{
+            		SFTPInformation = "No active channels with SFTP connections detected.";
+            	}
+            	else
+            	{
+            		//exports to devLog if command was ran and query returned information
+                	String[] splitReturn = SFTPInformation.split("\n");
+                	for(int c=0;c<splitReturn.length;c++)
+                	{
+                		logCommands.exportDevLogItem(splitReturn[c].toString());
+                	}
+            	}    
+            	
+            	JTextArea sftpInformationWindow = new JTextArea(SFTPInformation);
+            	sftpInformationWindow.setEditable(false);
+            	sftpInformationWindow.setLineWrap(true);
+            	sftpInformationWindow.setWrapStyleWord(true);
+
+                JScrollPane scrollPane = new JScrollPane(sftpInformationWindow);
+                scrollPane.setPreferredSize(new Dimension(600, 250));
+                
+                logCommands.exportToLog("QUERY COMPLETE. Please view the popup window");
+            	JOptionPane.showMessageDialog(labelVersion, scrollPane, "SFTP Credential Information:", JOptionPane.PLAIN_MESSAGE);
+            }
             else 
             {
                 //Cancel was pressed
@@ -2085,8 +2214,12 @@ public class applicationWindow extends JFrame implements ActionListener
         JButton btn9 = new JButton("SET MIRTH MEMORY");
         btn9.setForeground(Color.BLACK);
         btn9.setBackground(new java.awt.Color(188,148,255));
+        JButton btn10 = new JButton("SFTP INFO");
+        btn10.setForeground(Color.BLACK);
+        btn10.setBackground(new java.awt.Color(255, 130, 232));
         otherPanel.add(btn7);
         otherPanel.add(btn9);
+        otherPanel.add(btn10);
         mainPanel.add(otherPanel);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -2124,6 +2257,7 @@ public class applicationWindow extends JFrame implements ActionListener
             else if (src == btn7) result[0] = 7;
             else if (src == btn8) result[0] = 8;
             else if (src == btn9) result[0] = 9;
+            else if (src == btn10) result[0] = 10;
             else if (src == btnCancel) result[0] = -1;
             dialog.dispose();
         };
@@ -2137,6 +2271,7 @@ public class applicationWindow extends JFrame implements ActionListener
         btn7.addActionListener(al);
         btn8.addActionListener(al);
         btn9.addActionListener(al);
+        btn10.addActionListener(al);
         btnCancel.addActionListener(al);
 
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -2149,7 +2284,7 @@ public class applicationWindow extends JFrame implements ActionListener
     private static int showThemeMenu() 
     {
     	java.awt.Window parent = javax.swing.SwingUtilities.getWindowAncestor(labelVersion);
-        final JDialog dialog = new JDialog(parent, "MORE FEATURES", JDialog.ModalityType.APPLICATION_MODAL);
+        final JDialog dialog = new JDialog(parent, "THEMES", JDialog.ModalityType.APPLICATION_MODAL);
 
         JPanel mainPanel = new JPanel();
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -2174,10 +2309,14 @@ public class applicationWindow extends JFrame implements ActionListener
         JButton btn4 = new JButton("Ocean");
         btn4.setForeground(Color.BLACK);
         btn4.setBackground(new java.awt.Color(152, 210, 192));
+        JButton btn13 = new JButton("Shelby");
+        btn13.setForeground(new java.awt.Color(255, 25, 25));
+        btn13.setBackground(new java.awt.Color(244, 255, 255));
         row1.add(btn1);
         row1.add(btn2);
         row1.add(btn3);
         row1.add(btn4);
+        row1.add(btn13);
         mainPanel.add(row1);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -2197,10 +2336,14 @@ public class applicationWindow extends JFrame implements ActionListener
         JButton btn8 = new JButton("Mint");
         btn8.setForeground(Color.BLACK);
         btn8.setBackground(new java.awt.Color(73,255,152));
+        JButton btn14 = new JButton("Pub");
+        btn14.setForeground(Color.WHITE);
+        btn14.setBackground(new java.awt.Color(101,89,71));
         row2.add(btn5);
         row2.add(btn6);
         row2.add(btn7);
         row2.add(btn8);
+        row2.add(btn14);
         mainPanel.add(row2);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -2211,7 +2354,19 @@ public class applicationWindow extends JFrame implements ActionListener
         JButton btn9 = new JButton("GameCube");
         btn9.setForeground(Color.WHITE);
         btn9.setBackground(new java.awt.Color(123,44,191));
+        JButton btn10 = new JButton("LABDAQ");
+        btn10.setForeground(new java.awt.Color(244,145,46));
+        btn10.setBackground(new java.awt.Color(0, 57, 116));
+        JButton btn11 = new JButton("Ember");
+        btn11.setForeground(new java.awt.Color(255, 186, 8));
+        btn11.setBackground(new java.awt.Color(157, 2, 8));
+        JButton btn12 = new JButton("Unicorn");
+        btn12.setForeground(new java.awt.Color(247, 37, 133));
+        btn12.setBackground(new java.awt.Color(76, 201, 240));
         row3.add(btn9);
+        row3.add(btn10);
+        row3.add(btn11);
+        row3.add(btn12);
         mainPanel.add(row3);
 
         mainPanel.add(Box.createVerticalStrut(10));
@@ -2249,6 +2404,11 @@ public class applicationWindow extends JFrame implements ActionListener
             else if (src == btn7) result[0] = 7;
             else if (src == btn8) result[0] = 8;
             else if (src == btn9) result[0] = 9;
+            else if (src == btn10) result[0] = 10;
+            else if (src == btn11) result[0] = 11;
+            else if (src == btn12) result[0] = 12;
+            else if (src == btn13) result[0] = 13;
+            else if (src == btn14) result[0] = 14;
             else if (src == btnCancel) result[0] = -1;
             dialog.dispose();
         };
@@ -2262,6 +2422,11 @@ public class applicationWindow extends JFrame implements ActionListener
         btn7.addActionListener(al);
         btn8.addActionListener(al);
         btn9.addActionListener(al);
+        btn10.addActionListener(al);
+        btn11.addActionListener(al);
+        btn12.addActionListener(al);
+        btn13.addActionListener(al);
+        btn14.addActionListener(al);
         btnCancel.addActionListener(al);
 
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -2272,7 +2437,7 @@ public class applicationWindow extends JFrame implements ActionListener
         if(result[0] > 0)
         {
         	int themeInt = result[0]-1;
-        	String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE"};
+        	String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE", "LABDAQ", "EMBER", "UNICORN", "SHELBY", "PUB"};
         	changeTheme(themeInt, themes[themeInt]);
         }
         else
@@ -2377,7 +2542,7 @@ public class applicationWindow extends JFrame implements ActionListener
                 	else if(line.contains("Theme: "))
                 	{                		
                 		String targetTheme = line.replace("Theme: ", "");
-                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE"};
+                		String[] themes = {"ORIGINAL", "DARK", "LIGHT", "OCEAN", "BAD LANDS", "MERBY", "RAVENS", "MINT", "GAMECUBE", "LABDAQ", "EMBER", "UNICORN", "SHELBY", "PUB"};
                 		for(int mythemes=0;mythemes<themes.length;mythemes++)
                 		{
                 			if(targetTheme.equals(themes[mythemes]))
@@ -2466,5 +2631,133 @@ public class applicationWindow extends JFrame implements ActionListener
     	}
     	
     	return "Window opened";
+    }
+    
+    //Added in 2.2.10 to show a loading icon when running several different commands
+    public static void runTaskWithLoading(Component parentComponent, Runnable task) 
+    {
+        //Snaps loading bar to the main MCC application
+        java.awt.Window parentWindow = javax.swing.SwingUtilities.getWindowAncestor(parentComponent);
+        if (parentWindow == null && parentComponent instanceof java.awt.Window) 
+        {
+            parentWindow = (java.awt.Window) parentComponent;
+        }
+
+        final JDialog loadingDialog;
+        if (parentWindow instanceof java.awt.Frame) 
+        {
+            loadingDialog = new JDialog((java.awt.Frame) parentWindow, "Processing...", true);
+        } 
+        else if (parentWindow instanceof java.awt.Dialog) 
+        {
+            loadingDialog = new JDialog((java.awt.Dialog) parentWindow, "Processing...", true);
+        } 
+        else 
+        {
+            loadingDialog = new JDialog(frame, "Processing...", true);
+        }
+
+        loadingDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        
+        //Progress bar setup
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.add(progressBar, BorderLayout.CENTER);
+
+        loadingDialog.add(panel);
+        loadingDialog.pack();
+        loadingDialog.setLocationRelativeTo(parentWindow);
+
+        //Execute long-running task in SwingWorker
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() 
+        {
+            @Override
+            protected Void doInBackground() throws Exception 
+            {
+                task.run();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                loadingDialog.dispose();
+            }
+        };
+
+        worker.execute();
+        loadingDialog.setVisible(true); //Blocks user interaction while task runs
+    }
+    
+    //New called logic to export channels
+    private static void executeExport(String host) 
+    {
+        logCommands.exportToLog("Performing backup. NOTE: Please be patient as this may take up to 2 minutes to run");
+        Main.setBackupFolder();
+        channelExport.isFullMirthExportCheck("NO");
+        System.out.println("PERFORMING CHANNEL BACKUP");
+        logCommands.exportDevLogItem("PERFORMING CHANNEL BACKUP");
+        
+        channelExport exportChannels = new channelExport();
+        channelExport.exportChannels(host);
+        
+        channelExport exportMetadata = new channelExport();
+        try 
+        {
+            channelExport.exportMetadata(host);
+        } 
+        catch (FileNotFoundException e1) 
+        {
+            e1.printStackTrace();
+        }
+        
+        logCommands.returnArchivedChannels(Main.getBackupFolder() + "\\channelBackup\\");
+        Main.deleteBuildingBlockFiles();
+    }
+    
+    //Updated 2.2.10 logic for full exports to utilize the loading bar
+    private static void executeFullExport(String host)
+    {
+    	channelExport.clearChannelFolder();
+        Main.setBackupFolder();
+        logCommands.exportToLog("PERFORMING FULL MIRTH CONFIGURATION EXPORT");
+        logCommands.exportToLog("NOTE: Please be patient as this may take up to 2 minutes to run");
+        //pushAlertThrough();
+        channelExport.isFullMirthExportCheck("YES");
+        
+        //String host = Main.returnHost();
+        channelExport exportChannels = new channelExport();
+        channelExport.exportChannels(host);
+        channelExport exportMetadata = new channelExport();
+        try 
+        {
+            channelExport.exportMetadata(host);
+        } 
+        catch (Exception e1) 
+        {
+        	System.out.println("UNABLE TO EXPORT CHANNEL METADATA");
+        	logCommands.exportDevLogItem("UNABLE TO EXPORT CHANNEL METADATA");
+            e1.printStackTrace();
+        }
+        channelExport.isFullMirthExportCheck("NO");
+        logCommands.exportToLog("EXPORTED - Channels and Metadata");
+
+        try 
+        {
+            fullConfigExport.exportChannelGroups(host);
+        } 
+        catch (SQLException e1) 
+        {
+            e1.printStackTrace();
+        }
+        //setLogWindow();
+        catch (FileNotFoundException e1)
+        {
+            e1.printStackTrace();
+        }
+        Main.deleteBuildingBlockFiles(); //RE-ENABLE ME: 
+        logCommands.exportToLog("Full configuration exported to: " + Main.getBackupFolder() +"fullMirthExport");
     }
 }

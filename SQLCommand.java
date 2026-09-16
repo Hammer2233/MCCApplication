@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class SQLCommand 
@@ -30,6 +31,7 @@ public class SQLCommand
     private static ArrayList channelIDList = new ArrayList();
     private static ArrayList channelStatusList = new ArrayList();
     private static ArrayList channelNameList = new ArrayList();
+    private static ArrayList channelNameAndStatus = new ArrayList();
     
     private static ArrayList channelName = new ArrayList();
     private static ArrayList channelXML = new ArrayList();
@@ -77,7 +79,7 @@ public class SQLCommand
         	Throwable currentMessage = e;
         	while (currentMessage != null)
         	{
-        		if(currentMessage.getMessage() != null && currentMessage.getMessage().contains("Log record"))
+        		if(currentMessage.getMessage() != null && currentMessage.getMessage().contains("Log record") || currentMessage.getMessage() != null && currentMessage.getMessage().contains("contains a virus or potentially unwanted software"))
         		{
         			foundLogCorruption = true;
         			break;
@@ -584,6 +586,7 @@ public class SQLCommand
     	channelIDList.clear();
 		channelStatusList.clear();
 		channelNameList.clear();
+		channelNameAndStatus.clear();
     	String dbInformationText = "Mirth Database Version: ";
     	try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())    	
         {
@@ -693,7 +696,15 @@ public class SQLCommand
                     		channelStatusBuilder(host);
             				for(int e=0;e<channelNameList.size();e++)
             				{
-                				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+            					//dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";            					
+            					String combine = channelNameList.get(e) + " - " + channelStatusList.get(e);                				
+                				channelNameAndStatus.add(combine);
+            				}
+            				
+            				Collections.sort(channelNameAndStatus, String.CASE_INSENSITIVE_ORDER);
+            				for(int x=0;x<channelNameAndStatus.size();x++)
+            				{
+            					dbInformationText += channelNameAndStatus.get(x) + "\n";
             				}
                 		}
                 		else
@@ -704,7 +715,15 @@ public class SQLCommand
                     		logCommands.exportDevLogItem("channelNameList size: " + channelNameList.size());
             				for(int e=0;e<channelNameList.size();e++)
             				{
-                				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+                				//dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+                				String combine = channelNameList.get(e) + " - " + channelStatusList.get(e);                				
+                				channelNameAndStatus.add(combine);
+            				}
+            				
+            				Collections.sort(channelNameAndStatus, String.CASE_INSENSITIVE_ORDER);
+            				for(int x=0;x<channelNameAndStatus.size();x++)
+            				{
+            					dbInformationText += channelNameAndStatus.get(x) + "\n";
             				}
                 		}    		
                 	}
@@ -714,7 +733,15 @@ public class SQLCommand
                 		channelStatusBuilder(host);
         				for(int e=0;e<channelNameList.size();e++)
         				{
-            				dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+            				//dbInformationText += channelNameList.get(e) + " - " + channelStatusList.get(e) + "\n";
+            				String combine = channelNameList.get(e) + " - " + channelStatusList.get(e);                				
+            				channelNameAndStatus.add(combine);
+        				}
+        				
+        				Collections.sort(channelNameAndStatus, String.CASE_INSENSITIVE_ORDER);
+        				for(int x=0;x<channelNameAndStatus.size();x++)
+        				{
+        					dbInformationText += channelNameAndStatus.get(x) + "\n";
         				}
                 	}  
     			}            	
@@ -1082,5 +1109,176 @@ public class SQLCommand
     	}
         
         return "lite export complete";
+    }
+    
+    //added in 2.2.10 to grab SFTP channel login information
+    public static String SFTPCredGrabber(String host)
+    {
+    	//Determines if the commands should be ran for < or > 3.5.1 Mirth databases
+    	String mirthVersion = fullConfigExport.getMirthVersion(host).replace("\"", "");;
+    	String[] splitVersion = mirthVersion.split("\\.");
+    	
+    	boolean newMirth = true;
+    	if(Integer.parseInt(splitVersion[0]) < 4 && Integer.parseInt(splitVersion[1]) < 5 || Integer.parseInt(splitVersion[0]) < 3)
+    	{
+    		newMirth = false;
+    		System.out.println("Mirth database version is less than 3.5.1");
+    		logCommands.exportDevLogItem("Mirth database version is less than 3.5.1");   		
+    	}
+    	else
+    	{
+    		newMirth = true;
+    		System.out.println("Mirth database version is 3.5.1 or higher");
+    		logCommands.exportDevLogItem("Mirth database version is 3.5.1 or higher");
+    	}
+    	
+    	String returnedSFTPInformation = "";
+    	
+    	if(newMirth == true)
+    	{
+    		String[] commands = {"SELECT VALUE from CONFIGURATION where NAME = 'channelMetadata'", "SELECT NAME, CHANNEL FROM CHANNEL WHERE ID IN (REPLACETHISVALUE)"};
+
+    		String capturedMetadata = "";
+    		ArrayList capturedIDs = new ArrayList();
+    		ArrayList capturedName = new ArrayList();
+    		ArrayList capturedChannel = new ArrayList();
+    		
+    		try(Connection conn = DriverManager.getConnection(host); Statement stmt = conn.createStatement())
+            {
+    			for(int i=0; i<commands.length; i++)
+    			{
+    				if(i==0)
+    				{
+    					ResultSet rs = stmt.executeQuery(commands[i]);
+    					if (rs.next()) 
+    					{
+    	                    capturedMetadata = rs.getString(1); 
+    	                }
+    					
+    					String[] splitMetadata = capturedMetadata.split("</entry>");
+    		    		
+    		    		for(int j=0; j<splitMetadata.length; j++)
+    		    		{
+    		    			String currentID = "";
+    		    			String currentStatus = "";
+    		    			
+    		    			String splitFurther[] = splitMetadata[j].split("\n");
+    		    			for(int jj=0;jj<splitFurther.length;jj++)
+    		    			{
+    		    				if(splitFurther[jj].contains("<string>"))
+    		    				{
+    		    					currentID = splitFurther[jj].replace("<string>","").replace("</string>","").trim();
+    		    				}
+    		    				
+    		    				if(splitFurther[jj].contains("<enabled>"))
+    		    				{
+    		    					currentStatus = splitFurther[jj].replace("<enabled>","").replace("</enabled>","").trim();
+    		    					if("true".equalsIgnoreCase(currentStatus))
+    		    					{
+    		    						capturedIDs.add(currentID);
+    		    					}
+    		    				}
+    		    			}
+    		    		}
+    				}
+    				else
+    				{
+    					StringBuilder replacement = new StringBuilder();
+    	                for (int m = 0; m < capturedIDs.size(); m++) 
+    	                {
+    	                    replacement.append("'").append(capturedIDs.get(m)).append("'");
+    	                    if (m < capturedIDs.size() - 1) 
+    	                    {
+    	                        replacement.append(", ");
+    	                    }
+    	                }
+
+    	                String formattedQuery = commands[i].replace("REPLACETHISVALUE", replacement.toString());
+    	                ResultSet rs = stmt.executeQuery(formattedQuery);
+    					
+    					while (rs.next()) 
+    					{
+    	                    capturedName.add(rs.getString(1));
+    	                    capturedChannel.add(rs.getString(2));
+    	                }
+    				}
+    			}
+                conn.close();
+            }
+            catch (Exception e) 
+            {
+                e.printStackTrace();
+            }
+    		
+    		boolean addedHeader = false;
+    		for (int u = 0; u < capturedChannel.size(); u++) 
+    		{
+    		    String channelXml = capturedChannel.get(u).toString();
+    		    String[] connectors = channelXml.split("<connector ");
+    		   
+    		    boolean channelHeaderAdded = false;
+    		    for (int i = 1; i < connectors.length; i++) 
+    		    {
+    		        String connectorXml = connectors[i];
+    		        if (connectorXml.contains("<scheme>SFTP</scheme>")) 
+    		        {
+    		        	//adds note at the top of the return
+    		        	if(addedHeader == false)
+    		        	{
+    		        		returnedSFTPInformation += "SFTP Credentials Detected. Save this to a notepad or\nrun the 'devlog' command to save it to the MCC-TRACE file\n\n";
+    		        		addedHeader = true;
+    		        	}
+    		            //Add the channel header once per channel that contains at least one SFTP connector
+    		            if (!channelHeaderAdded) 
+    		            {
+    		                returnedSFTPInformation += "====================\n" + capturedName.get(u) + "\n====================\n";
+    		                channelHeaderAdded = true;
+    		            }
+
+    		            String[] lines = connectorXml.split("\n");
+    		            boolean insideProperties = false;
+
+    		            for (String line : lines) 
+    		            {
+    		                if (line.contains("<properties")) insideProperties = true;
+    		                if (line.contains("</properties>")) insideProperties = false;
+
+    		                if (insideProperties) 
+    		                {
+    		                    if (line.contains("</host>")) 
+    		                    {
+    		                        returnedSFTPInformation += "ADDRESS: " + line.replaceAll("</?host>", "").trim() + "\n";
+    		                    }
+    		                    if (line.contains("</username>")) 
+    		                    {
+    		                        returnedSFTPInformation += "USERNAME: " + line.replaceAll("</?username>", "").trim() + "\n";
+    		                    }
+    		                    if (line.contains("</password>")) 
+    		                    {
+    		                        returnedSFTPInformation += "PASSWORD: " + line.replaceAll("</?password>", "").trim() + "\n\n";
+    		                    }
+    		                }
+    		            }
+    		        }
+    		    }
+    		}    		
+    		capturedMetadata = "";
+    		capturedIDs.clear();
+    		capturedName.clear();
+    		capturedChannel.clear();
+    	}
+    	else
+    	{
+    		returnedSFTPInformation = "This command is not available in Mirth versions <3.5.1\nIf you require SFTP credentials, please do the following:\n\n1. Export the channel in question (via MCC or Manually)\n2. Open and view the XML\n3. Search 'SFTP' in said XML file\n4. View the Username and Password fields";
+    	}
+    	
+    	if(returnedSFTPInformation == "")
+    	{
+    		return "DISPLAYNOTHING";
+    	}
+    	else
+    	{
+    		return returnedSFTPInformation;
+    	}
     }
 }
